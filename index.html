@@ -202,7 +202,7 @@ function accRes(r,okMsg){
 }
 function deny(){toast('Nu ai drept pentru această acțiune.',true);}
 function toast(m,bad){var t=document.createElement('div');t.textContent=m;if(bad)t.className='bad';$('toast').appendChild(t);setTimeout(function(){t.remove();},bad?4200:2400);}
-var VERSION='v0.10.0',SCHEMA=9;
+var VERSION='v0.11.0',SCHEMA=9;
 var ZONES0=[
  {id:'c1',name:'Camera 1',desc:'Ultima din video, după ușă: frigider, rafturi și multe flightcase-uri diferite.',x:10,y:10,w:320,h:170},
  {id:'c2',name:'Camera 2',desc:'A doua din video: sunet, rafturi și un birou.',x:10,y:190,w:320,h:150},
@@ -518,15 +518,17 @@ function render(){
   var app=$('app');
   if(!UI.profile){app.innerHTML=loginView();return;}
   var cnt=myNotifs().filter(function(n){return n.at>(S.seen[P()+UI.me]||0);}).length;
-  var h='<header class="top"><img class="hlogo" alt="ESD" src="'+LOGOS+'" onclick="A.go(\'inv\')"><div class="who" style="display:flex;gap:8px;align-items:center">'+avatar(person(UI.me),'sm2')+'<div><b>'+esc(pname(UI.me))+' <span class="cstd" onclick="A.cloud()">'+CLOUD.dot()+'</span></b><span>'+esc(PROFILES[P()])+'</span></div></div>'+
+  var h='<header class="top"><img class="hlogo" alt="ESD" src="'+LOGOS+'" onclick="A.go(homeTab())"><div class="who" style="display:flex;gap:8px;align-items:center">'+avatar(person(UI.me),'sm2')+'<div><b>'+esc(pname(UI.me))+' <span class="cstd" onclick="A.cloud()">'+CLOUD.dot()+'</span></b><span>'+esc(PROFILES[P()])+'</span></div></div>'+
     '<button onclick="A.go(\'more\',\'notif\')" aria-label="Notificări">🔔'+(cnt?' '+cnt:'')+'</button><button onclick="A.logout()">Schimbă</button></header><main><div id="cstb">'+CLOUD.banner()+'</div>';
   var body='';
-  if(UI.tab==='inv')body=invView();
+  if(UI.tab==='azi'&&!isSef())UI.tab='inv';
+  if(UI.tab==='azi')body=todayView();
+  else if(UI.tab==='inv')body=invView();
   else if(UI.tab==='cal')body=calView();
   else if(UI.tab==='ev')body=evView();
   else if(UI.tab==='rent')body=rentView();
   else body=moreView();
-  var tabs=[['inv','📦','Inventar'],['cal','📅','Calendar'],['ev','🎤','Evenimente'],['rent','🧾','Rent'],['more','☰','Mai mult']];
+  var tabs=(isSef()?[['azi','☀️','Azi']]:[]).concat([['inv','📦','Inventar'],['cal','📅','Calendar'],['ev','🎤','Evenimente'],['rent','🧾','Rent'],['more','☰','Mai mult']]);
   var nav='<nav class="bottom"><div class="inner">'+tabs.map(function(t){return '<button class="'+(UI.tab===t[0]?'on':'')+'" onclick="A.go(\''+t[0]+'\')"><i>'+t[1]+'</i>'+t[2]+'</button>';}).join('')+'</div></nav>';
   app.innerHTML=h+body+'</main>'+nav;
 }
@@ -609,6 +611,38 @@ function calView(){
 }
 
 /* ---------- evenimente ---------- */
+function homeTab(){return isSef()?'azi':'inv';}
+/* ---------- ecranul „Azi” (Șef): tot ce contează azi, fără meniuri ---------- */
+function todayView(){
+  var t=today(),t7=addDays(t,7),D=['Duminică','Luni','Marți','Miercuri','Joi','Vineri','Sâmbătă'],dd=parse(t);
+  var h='<h2 style="margin-bottom:2px">Bună, '+esc(pname(UI.me).split(' ')[0])+'</h2><div class="mut" style="margin-bottom:12px">'+D[dd.getDay()]+', '+fmt(t)+'</div>';
+  h+=shortHtml();
+  var late=S.rentals.filter(function(r){return !r.returned&&r.to<t;});
+  var retToday=S.rentals.filter(function(r){return !r.returned&&r.to===t;});
+  var startToday=S.events.filter(function(e){return e.from===t;});
+  var running=S.events.filter(function(e){return e.from<t&&e.to>=t;});
+  var endToday=S.events.filter(function(e){return e.to===t;});
+  var next=S.events.filter(function(e){return e.from>t&&e.from<=t7;}).sort(function(a,b){return a.from<b.from?-1:1;});
+  var badIt=S.items.filter(function(i){return bad(i,'Defect')+bad(i,'Mentenanță')>0;});
+  var unpaid=0,nUnpaid=0;S.payments.forEach(function(y){if(!y.paid&&evt(y.event)){unpaid+=y.sum;nUnpaid++;}});
+  var tiles=[[startToday.length+running.length,'la evenimente azi','ev',''],[late.length,'retururi întârziate','rent',late.length?'bad':''],[retToday.length+endToday.length,'se întorc azi','rent',''],[badIt.length,'defecte / mentenanță','inv',badIt.length?'warn':'']];
+  h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">'+tiles.map(function(x){return '<div class="card" style="margin:0;cursor:pointer;text-align:center;padding:14px 8px'+(x[3]==='bad'?';border-color:var(--bad)':x[3]==='warn'?';border-color:var(--warn)':'')+'" onclick="'+(x[2]==='inv'?'A.aziBad()':'A.go(\''+x[2]+'\')')+'"><div style="font-size:30px;font-weight:800;line-height:1.1;color:'+(x[3]==='bad'?'var(--bad)':x[3]==='warn'?'var(--warn)':'var(--gold)')+'">'+x[0]+'</div><div class="sm">'+x[1]+'</div></div>';}).join('')+'</div>';
+  h+='<div class="row" style="gap:8px;margin-bottom:6px"><button class="btn primary grow" onclick="A.evForm()">+ Eveniment</button><button class="btn primary grow" onclick="A.go(\'rent\');A.rSub(\'new\')">+ Închiriere</button></div>';
+  h+='<button class="btn block" style="margin-bottom:12px" onclick="A.go(\'more\',\'check\')">📆 Verifică disponibilitatea</button>';
+  function sec(title,arr,fn,empty){return '<h3>'+title+'</h3>'+(arr.length?arr.map(fn).join(''):'<div class="mut sm" style="margin-bottom:8px">'+empty+'</div>');}
+  function evLine(e,tag){var n=0;e.lines.forEach(function(l){n+=l.qty;});return '<div class="card" style="cursor:pointer" onclick="A.evView(\''+e.id+'\')"><div class="row"><div class="grow"><b>'+esc(e.name)+'</b>'+(tag?' <span class="pill acc">'+tag+'</span>':'')+'<div class="mut sm">'+esc(e.loc||'locație nespecificată')+' · '+fmt(e.from)+(e.to!==e.from?' – '+fmt(e.to):'')+'</div><div class="sm">Responsabil <b>'+esc(pname(e.resp))+'</b> · echipă '+e.team.length+' · '+n+' buc. echipament</div></div></div></div>';}
+  function rLine(r){var c=client(r.client),s=rstatus(r),n=0;r.lines.forEach(function(l){n+=l.qty;});return '<div class="card"><div class="row"><div class="grow"><b>'+esc(c?c.name:'(client șters)')+'</b><div class="mut sm">'+n+' buc. · retur '+fmt(r.to)+(c&&c.phone?' · <a href="tel:'+esc(c.phone)+'">'+esc(c.phone)+'</a>':'')+'</div></div><span class="pill '+s.c+'">'+esc(s.t)+'</span></div><div class="row" style="gap:6px;margin-top:6px"><button class="btn small" onclick="A.rRet(\''+r.id+'\')">✓ Returnat</button><button class="btn small" onclick="A.rExt(\''+r.id+'\')">Prelungește</button></div></div>';}
+  if(late.length)h+=sec('⚠️ Întârziate',late,rLine,'');
+  h+=sec('Pleacă azi',startToday,function(e){return evLine(e,'azi');},'Niciun eveniment nu începe azi.');
+  if(running.length)h+=sec('În desfășurare',running,function(e){return evLine(e,'');},'');
+  h+=sec('Se întoarce azi',retToday,rLine,'')+(endToday.length?endToday.map(function(e){return evLine(e,'se termină');}).join(''):(retToday.length?'':'<div class="mut sm" style="margin-bottom:8px">Nimic de primit azi.</div>'));
+  var busy={};startToday.concat(running).forEach(function(e){e.team.forEach(function(p){(busy[p]=busy[p]||[]).push(e.name);});});
+  var ids=Object.keys(busy);
+  h+='<h3>Cine e unde azi</h3>'+(ids.length?'<div class="card">'+ids.map(function(p){return '<div class="row" style="padding:3px 0"><div class="grow">'+esc(pname(p))+'</div><div class="sm mut">'+busy[p].map(esc).join(', ')+'</div></div>';}).join('')+'</div>':'<div class="mut sm" style="margin-bottom:8px">Nimeni nu e la eveniment azi.</div>');
+  h+=sec('Următoarele 7 zile',next,function(e){return evLine(e,'');},'Nimic programat.');
+  if(nUnpaid)h+='<div class="card" style="cursor:pointer" onclick="A.go(\'more\',\'pay\')">💰 De plătit echipei: <b>'+money(unpaid)+'</b> <span class="mut sm">('+nUnpaid+' plăți)</span></div>';
+  return h;
+}
 function evCard(e){
   return '<div class="card" onclick="A.evView(\''+e.id+'\')" style="cursor:pointer"><b>'+esc(e.name)+'</b><div class="mut sm">'+fmt(e.from)+(e.to!==e.from?' – '+fmt(e.to):'')+' · '+esc(e.loc||'locație nespecificată')+'</div><div class="sm">Responsabil: <b>'+esc(pname(e.resp))+'</b> · creat de '+esc(pname(e.createdBy))+'</div></div>';
 }
@@ -935,7 +969,7 @@ var A={
       var bt=$('lg-go');if(bt){if(bt.disabled)return;bt.disabled=true;bt.textContent='Se verifică…';}
       CLOUD.login(pid,pw).then(function(r){
         var b2=$('lg-go');if(b2){b2.disabled=false;b2.textContent='Intră';}
-        if(r&&r.ok){UI.me=pid;UI.profile=r.role;UI.tab='inv';UI.more='';UI.fails=0;LAST=snap();try{localStorage.setItem('esd-last-me',pid);}catch(e){}render();if(r.offline)toast('Ai intrat fără internet.');return;}
+        if(r&&r.ok){UI.me=pid;UI.profile=r.role;UI.tab=r.role==='sef'?'azi':'inv';UI.more='';UI.fails=0;LAST=snap();try{localStorage.setItem('esd-last-me',pid);}catch(e){}render();if(r.offline)toast('Ai intrat fără internet.');return;}
         var w=r&&r.why;
         if(w==='locked'){toast('Prea multe încercări greșite. Mai așteaptă 5 minute.',true);}
         else if(w==='net'){toast('Fără internet: pe acest telefon nu ai mai intrat cu această parolă, deci nu o pot verifica acum.',true);}
@@ -947,7 +981,7 @@ var A={
     }
     var a=S.accounts.filter(function(x){return x.person===pid&&x.on!==false&&x.h===h;})[0];
     if(!pw||!a){UI.fails++;if(UI.fails>=5){UI.lock=now+30000;UI.fails=0;}toast('Nume sau parolă greșită.',true);$('lg-pw').value='';return;}
-    UI.me=pid;UI.profile=a.role;UI.tab='inv';UI.more='';UI.fails=0;LAST=snap();try{localStorage.setItem('esd-last-me',pid);}catch(e){}render();
+    UI.me=pid;UI.profile=a.role;UI.tab=a.role==='sef'?'azi':'inv';UI.more='';UI.fails=0;LAST=snap();try{localStorage.setItem('esd-last-me',pid);}catch(e){}render();
   },
   logout:function(){UI.profile=null;UI.me=null;closeModal();render();},
   reset:function(){if(!isAdmin()){toast('Doar administratorul poate reseta.',true);return;}if(CLOUD.linked()){toast('Resetarea e oprită cât timp dispozitivul e conectat la datele comune.',true);return;}confirmBox('Revii la datele de exemplu? Toate modificările tale dispar (conturile rămân).',function(){var ac=S.accounts;S=seed();S.accounts=ac;LAST=null;save();R=null;toast('Datele de exemplu au fost readuse.');render();},'Resetează');},
@@ -1108,6 +1142,7 @@ var A={
   /* calendar */
   calNav:function(n){UI.calM+=n;if(UI.calM<0){UI.calM=11;UI.calY--;}if(UI.calM>11){UI.calM=0;UI.calY++;}render();},
   calPick:function(d){UI.calDay=d;render();},
+  aziBad:function(){UI.invState='bad';A.go('inv');},
   /* evenimente */
   evF:function(v){UI.evFilter=v;render();},
   evView:evDetail,
@@ -1221,7 +1256,7 @@ var A={
 window.A=A;
 document.addEventListener('keydown',function(e){if(e.key==='Escape')closeModal();});
 $('modal').addEventListener('click',function(e){if(e.target===$('modal'))closeModal();});
-(function(){var SKIP=['login','logout','go','close','setQ','setDept','setInvDate','mapQ','mapHi','zoneView','elView','imgErr','chkSet','accSug','efSet','efRefresh','cloud','setInvState'];
+(function(){var SKIP=['login','logout','go','close','setQ','setDept','setInvDate','mapQ','mapHi','zoneView','elView','imgErr','chkSet','accSug','efSet','efRefresh','cloud','setInvState','aziBad'];
   Object.keys(A).forEach(function(k){var f=A[k];if(typeof f!=='function'||SKIP.indexOf(k)>=0)return;A[k]=function(){var top=DEPTH===0;if(top)T0=Date.now();DEPTH++;try{return f.apply(this,arguments);}finally{DEPTH--;if(top&&DIRTY)auditNow();}};});})();
 /* ===== Sincronizare online live (Supabase) – conturi verificate de server (v0.10) ===== */
 var CLOUD=(function(){
