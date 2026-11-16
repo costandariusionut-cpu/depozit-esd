@@ -1,0 +1,33 @@
+{
+ "name": "Depozit ESD – echipamente și evenimente",
+ "short_name": "Depozit ESD",
+ "description": "Inventar, evenimente și rent pentru ESD Event Sound DJ",
+ "start_url": "./",
+ "scope": "./",
+ "id": "./",
+ "display": "standalone",
+ "orientation": "portrait",
+ "background_color": "#1b1b1d",
+ "theme_color": "#141416",
+ "lang": "ro",
+ "icons": [
+  {
+   "src": "icons/icon-192.png",
+   "sizes": "192x192",
+   "type": "image/png",
+   "purpose": "any"
+  },
+  {
+   "src": "icons/icon-512.png",
+   "sizes": "512x512",
+   "type": "image/png",
+   "purpose": "any"
+  },
+  {
+   "src": "icons/maskable-512.png",
+   "sizes": "512x512",
+   "type": "image/png",
+   "purpose": "maskable"
+  }
+ ]
+}
