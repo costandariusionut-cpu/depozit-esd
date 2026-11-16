@@ -197,7 +197,7 @@ function money(n){return (Math.round(n*100)/100).toLocaleString('ro-RO')+' lei';
 function $(id){return document.getElementById(id);}
 function deny(){toast('Nu ai drept pentru această acțiune.',true);}
 function toast(m,bad){var t=document.createElement('div');t.textContent=m;if(bad)t.className='bad';$('toast').appendChild(t);setTimeout(function(){t.remove();},bad?4200:2400);}
-var VERSION='v0.9.1',SCHEMA=9;
+var VERSION='v0.9.2',SCHEMA=9;
 var ZONES0=[
  {id:'c1',name:'Camera 1',desc:'Ultima din video, după ușă: frigider, rafturi și multe flightcase-uri diferite.',x:10,y:10,w:320,h:170},
  {id:'c2',name:'Camera 2',desc:'A doua din video: sunet, rafturi și un birou.',x:10,y:190,w:320,h:150},
@@ -1304,7 +1304,7 @@ var CLOUD=(function(){
     return false; /* modificat și local: rămâne varianta locală și pleacă la următoarea trimitere */
   }
   function persist(){try{localStorage.setItem(SYNCK,JSON.stringify(SYNCED));localStorage.setItem(PULLK,lastPull||'');}catch(e){}}
-  function saveLocal(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
+  function saveLocal(){try{localStorage.setItem(KEY,JSON.stringify(S));return true;}catch(e){return false;}}
 
   /* ---- descarcă modificările ---- */
   async function pull(wholesale){
@@ -1324,8 +1324,8 @@ var CLOUD=(function(){
       var m=localMap();
       Object.keys(m).forEach(function(k){if(!seenKeys[k]){var c=k.split('|')[0];if(c!=='meta'){delLocal(c,k.slice(c.length+1));changed=true;}}});
     }
+    if(changed){if(!saveLocal())throw new Error('Nu pot salva datele pe dispozitiv (memorie plină?)');softRender();}
     persist();
-    if(changed){saveLocal();softRender();}
     return total;
   }
 
@@ -1340,9 +1340,18 @@ var CLOUD=(function(){
         var h=hs(canon(m[k]));hmap[k]=h;
         if(SYNCED[k]!==h){var c=k.split('|')[0];rows.push({collection:c,id:k.slice(c.length+1),data:m[k],deleted:false,updated_by:by});}
       });
+      var dels=0,nS=0;
       Object.keys(SYNCED).forEach(function(k){
-        if(!(k in m)){var c=k.split('|')[0];rows.push({collection:c,id:k.slice(c.length+1),data:{},deleted:true,updated_by:by});}
+        nS++;if(!(k in m)){dels++;var c=k.split('|')[0];rows.push({collection:c,id:k.slice(c.length+1),data:{},deleted:true,updated_by:by});}
       });
+      /* protecție: aplicația nu șterge niciodată zeci de înregistrări deodată; dacă pare că da, datele locale sunt stricate
+         și se reiau de la echipă, în loc să fie șterse datele tuturor */
+      if(dels>20&&dels>nS*0.2){
+        lastErr='Protecție: ștergere în masă oprită; datele au fost reluate din baza comună.';
+        try{console.warn('ESD: '+lastErr,dels,nS);}catch(e){}
+        SYNCED={};lastPull='';await pull(true);try{LAST=snap();}catch(e){}
+        setStatus('ok');return;
+      }
       for(var i=0;i<rows.length;i+=40){
         var part=rows.slice(i,i+40);
         var r=await sb.from('records').upsert(part,{onConflict:'collection,id'});
@@ -1445,7 +1454,7 @@ var CLOUD=(function(){
   /* ---- conectare ---- */
   async function connect(code,fromGate){
     if(connecting||!code)return false;connecting=true;setStatus('conn');
-    var first=!ls(SYNCK)||ls(CODEK)!==code;
+    var first=!ls(SYNCK)||ls(CODEK)!==code||!S.linked;
     if(fromGate||first)box('<b>Se conectează…</b><p>Se încarcă datele comune ale echipei. Durează câteva secunde.</p>');
     try{
       await loadLib();
@@ -1462,12 +1471,12 @@ var CLOUD=(function(){
       if(first){SYNCED={};lastPull='';}
       else{try{SYNCED=JSON.parse(ls(SYNCK))||{};}catch(e){SYNCED={};}lastPull=ls(PULLK)||'';}
       await pull(first);
-      if(first){persist();try{S.v=SCHEMA;LAST=snap();}catch(e){}saveLocal();try{render();}catch(e){}}
+      if(first){S.linked=true;S.v=SCHEMA;try{LAST=snap();}catch(e){}if(!saveLocal())throw new Error('Nu pot salva datele pe dispozitiv (memorie plină?)');persist();try{render();}catch(e){}}
       ready=true;
       if(ch){try{sb.removeChannel(ch);}catch(e){}}
       ch=sb.channel('records-live').on('postgres_changes',{event:'*',schema:'public',table:'records'},function(p){
         var row=p&&p.new;if(!row||!row.collection)return;
-        if(applyRow(row,false)){persist();saveLocal();softRender();}
+        if(applyRow(row,false)){if(saveLocal())persist();softRender();}
       }).subscribe(function(s){
         if(s==='SUBSCRIBED'){reconcile();}
         else if(s==='CHANNEL_ERROR'||s==='TIMED_OUT'){if(ready&&status==='ok')setStatus('off');}
