@@ -195,9 +195,14 @@ function days(a,b){return Math.round((parse(b)-parse(a))/86400000)+1;}
 function validDate(s){return /^\d{4}-\d{2}-\d{2}$/.test(s||'')&&!isNaN(parse(s).getTime());}
 function money(n){return (Math.round(n*100)/100).toLocaleString('ro-RO')+' lei';}
 function $(id){return document.getElementById(id);}
+function accRes(r,okMsg){
+  if(r&&r.ok){closeModal();toast(okMsg);render();return;}
+  var w=r&&r.why,M={net:'Fără legătură la server. Încearcă din nou cu internet.',exists:'Persoana are deja un cont cu acest rol.',dup:'Persoana are deja această parolă la alt rol.',secret:'Parola trebuie să aibă minim 6 caractere.',self:'Nu îți poți opri sau șterge propriul cont de administrator.',person:'Persoana nu există (încă) în datele comune.',missing:'Contul nu mai există.',role:'Rol necunoscut.'};
+  toast(M[w]||('Serverul a refuzat: '+((r&&r.m)||'eroare')),true);
+}
 function deny(){toast('Nu ai drept pentru această acțiune.',true);}
 function toast(m,bad){var t=document.createElement('div');t.textContent=m;if(bad)t.className='bad';$('toast').appendChild(t);setTimeout(function(){t.remove();},bad?4200:2400);}
-var VERSION='v0.9.2',SCHEMA=9;
+var VERSION='v0.10.0',SCHEMA=9;
 var ZONES0=[
  {id:'c1',name:'Camera 1',desc:'Ultima din video, după ușă: frigider, rafturi și multe flightcase-uri diferite.',x:10,y:10,w:320,h:170},
  {id:'c2',name:'Camera 2',desc:'A doua din video: sunet, rafturi și un birou.',x:10,y:190,w:320,h:150},
@@ -528,9 +533,9 @@ function render(){
 function lastMe(){try{return localStorage.getItem('esd-last-me')||'';}catch(e){return '';}}
 function loginView(){
   return '<div class="login"><div class="brand"><div class="logoplate"><img src="'+LOGO+'" alt="ESD Event Sound DJ"></div><div class="brandname">Depozit &amp; Evenimente</div><div class="brandtag">Echipament · Evenimente · Rent</div></div>'+
-  '<div class="loginbox"><label>Cine ești?</label><select id="lg-me">'+S.persons.map(function(p){return '<option value="'+p.id+'"'+(p.id===lastMe()?' selected':'')+'>'+esc(p.name)+(p.dept&&p.dept!=='—'?' ('+esc(p.dept)+')':'')+'</option>';}).join('')+'</select>'+
+  '<div class="loginbox"><label>Cine ești?</label><select id="lg-me">'+((CLOUD.linked()&&CLOUD.people())||S.persons).map(function(p){return '<option value="'+p.id+'"'+(p.id===lastMe()?' selected':'')+'>'+esc(p.name)+(p.dept&&p.dept!=='—'?' ('+esc(p.dept)+')':'')+'</option>';}).join('')+'</select>'+
   '<label>Parola</label><input id="lg-pw" type="password" autocomplete="off" autocapitalize="none" onkeydown="if(event.key===\'Enter\')A.login()">'+
-  '<button class="btn primary block" style="margin-top:18px" onclick="A.login()">Intră</button></div>'+
+  '<button id="lg-go" class="btn primary block" style="margin-top:18px" onclick="A.login()">Intră</button></div>'+
   '<div class="login-foot"><span class="cst" onclick="A.cloud()" style="cursor:pointer">'+CLOUD.pill()+'</span><br>'+(CLOUD.linked()?'Parola hotărăște rolul · datele sunt comune cu echipa':'Mod demo cu date de exemplu · parola hotărăște rolul')+'<br>Depozit ESD '+VERSION+'</div></div>';
 }
 
@@ -836,7 +841,7 @@ function activityView(){
 }
 function accountsView(){
   if(!isAdmin())return '';
-  var h=back()+'<h2>Conturi</h2><div class="banner info">Doar tu vezi acest ecran. Parolele nu pot fi citite, doar schimbate. Lista cu parolele inițiale e în fișierul CONTURI-SI-PAROLE.md.</div><button class="btn primary block" style="margin-bottom:10px" onclick="A.accForm()">+ Cont nou</button>';
+  var h=back()+'<h2>Conturi</h2><div class="banner info">Doar tu vezi acest ecran. Parolele nu pot fi citite, doar schimbate.'+(CLOUD.linked()?' Sunt verificate de server; o parolă nouă deconectează persoana de pe telefoanele ei.':' Lista cu parolele inițiale e în fișierul CONTURI-SI-PAROLE.md.')+'</div><button class="btn primary block" style="margin-bottom:10px" onclick="A.accForm()">+ Cont nou</button>';
   S.persons.forEach(function(p){
     var l=S.accounts.filter(function(a){return a.person===p.id;});
     h+='<div class="card"><div class="row" style="align-items:center">'+avatar(p)+'<div class="grow"><b>'+esc(p.name)+'</b><div class="mut sm">'+esc(p.dept&&p.dept!=='—'?p.dept:'')+'</div></div></div>';
@@ -925,6 +930,21 @@ var A={
   login:function(){
     var now=Date.now();if(UI.lock>now){toast('Prea multe încercări. Mai așteaptă '+Math.ceil((UI.lock-now)/1000)+' secunde.',true);return;}
     var pid=$('lg-me').value,pw=$('lg-pw').value,h=pwHash(pw);
+    if(CLOUD.linked()){
+      if(!pw){toast('Scrie parola.',true);return;}
+      var bt=$('lg-go');if(bt){if(bt.disabled)return;bt.disabled=true;bt.textContent='Se verifică…';}
+      CLOUD.login(pid,pw).then(function(r){
+        var b2=$('lg-go');if(b2){b2.disabled=false;b2.textContent='Intră';}
+        if(r&&r.ok){UI.me=pid;UI.profile=r.role;UI.tab='inv';UI.more='';UI.fails=0;LAST=snap();try{localStorage.setItem('esd-last-me',pid);}catch(e){}render();if(r.offline)toast('Ai intrat fără internet.');return;}
+        var w=r&&r.why;
+        if(w==='locked'){toast('Prea multe încercări greșite. Mai așteaptă 5 minute.',true);}
+        else if(w==='net'){toast('Fără internet: pe acest telefon nu ai mai intrat cu această parolă, deci nu o pot verifica acum.',true);}
+        else if(w==='server'){toast('Parola e bună, dar serverul n-a deschis sesiunea. Încearcă din nou.',true);}
+        else if(w!=='code'){UI.fails++;if(UI.fails>=5){UI.lock=Date.now()+30000;UI.fails=0;}toast('Nume sau parolă greșită.',true);}
+        var pe=$('lg-pw');if(pe)pe.value='';
+      });
+      return;
+    }
     var a=S.accounts.filter(function(x){return x.person===pid&&x.on!==false&&x.h===h;})[0];
     if(!pw||!a){UI.fails++;if(UI.fails>=5){UI.lock=now+30000;UI.fails=0;}toast('Nume sau parolă greșită.',true);$('lg-pw').value='';return;}
     UI.me=pid;UI.profile=a.role;UI.tab='inv';UI.more='';UI.fails=0;LAST=snap();try{localStorage.setItem('esd-last-me',pid);}catch(e){}render();
@@ -1048,19 +1068,22 @@ var A={
     if(pw.length<6){toast('Parola trebuie să aibă minim 6 caractere.',true);return;}
     if(S.accounts.some(function(a){return a.person===pid&&a.role===role;})){toast('Persoana are deja un cont cu acest rol.',true);return;}
     var h=pwHash(pw);if(S.accounts.some(function(a){return a.person===pid&&a.h===h;})){toast('Persoana are deja un cont cu această parolă.',true);return;}
+    if(CLOUD.linked()){CLOUD.adminCreate(pid,role,pw).then(function(r){accRes(r,'Cont creat.');});return;}
     S.accounts.push({id:uid('a_'),person:pid,role:role,h:h,on:true});save();closeModal();toast('Cont creat.');render();},
   accPw:function(id){if(!isAdmin())return;var a=S.accounts.filter(function(x){return x.id===id;})[0];if(!a)return;var p=person(a.person)||{name:'',dept:''};
     openModal('Parolă nouă: '+p.name+' ('+PROFILES[a.role]+')','<label>Parola nouă (minim 6 caractere)</label><input id="ac-w" autocomplete="off" maxlength="40" value="'+esc(pwSuggest(p,a.role))+'"><button class="btn primary block" style="margin-top:12px" onclick="A.accPwSave(\''+id+'\')">Salvează</button>');},
   accPwSave:function(id){if(!isAdmin())return;var a=S.accounts.filter(function(x){return x.id===id;})[0];if(!a)return;var pw=$('ac-w').value;
     if(pw.length<6){toast('Parola trebuie să aibă minim 6 caractere.',true);return;}
+    if(CLOUD.linked()){CLOUD.adminPassword(id,pw).then(function(r){accRes(r,'Parola s-a schimbat. Persoana trebuie să intre din nou cu parola nouă.');});return;}
     var h=pwHash(pw);if(S.accounts.some(function(x){return x.id!==id&&x.person===a.person&&x.h===h;})){toast('Persoana are deja o altă parolă identică la alt rol.',true);return;}
     a.h=h;save();closeModal();toast('Parola s-a schimbat.');render();},
   accToggle:function(id){if(!isAdmin())return;var a=S.accounts.filter(function(x){return x.id===id;})[0];if(!a)return;
     if(a.role==='admin'&&a.person===UI.me){toast('Nu îți poți opri propriul cont de administrator.',true);return;}
+    if(CLOUD.linked()){CLOUD.adminEnable(id,a.on===false).then(function(r){accRes(r,a.on===false?'Cont pornit.':'Cont oprit.');});return;}
     a.on=a.on===false;save();render();},
   accDel:function(id){if(!isAdmin())return;var a=S.accounts.filter(function(x){return x.id===id;})[0];if(!a)return;
     if(a.role==='admin'&&a.person===UI.me){toast('Nu îți poți șterge propriul cont de administrator.',true);return;}
-    confirmBox('Ștergi contul? Persoana nu se mai poate conecta cu acest rol.',function(){S.accounts=S.accounts.filter(function(x){return x.id!==id;});save();toast('Cont șters.');render();},'Șterge');},
+    confirmBox('Ștergi contul? Persoana nu se mai poate conecta cu acest rol.',function(){if(CLOUD.linked()){CLOUD.adminDelete(id).then(function(r){accRes(r,'Cont șters.');});return;}S.accounts=S.accounts.filter(function(x){return x.id!==id;});save();toast('Cont șters.');render();},'Șterge');},
   mapQ:function(v){UI.mapQ=v;var r=$('map-res');if(r)r.innerHTML=mapRes();},
   mapHi:function(itemId){var it=item(itemId);var z=it&&it.loc&&zoneById(it.loc.z);if(!z){toast('Articolul nu are încă o cameră.',true);return;}var e=elById(it.loc.e);UI.mapZ=z.id;UI.mapE=e?e.id:null;var g=$('map-grid');if(g)g.innerHTML=mapGrid();toast(z.name+(e?', '+e.n:'')+(it.loc.n?', nivel '+it.loc.n:'')+(it.zoneGuess?' (orientativ)':''));},
   zoneView:zoneDetail,
@@ -1200,19 +1223,20 @@ document.addEventListener('keydown',function(e){if(e.key==='Escape')closeModal()
 $('modal').addEventListener('click',function(e){if(e.target===$('modal'))closeModal();});
 (function(){var SKIP=['login','logout','go','close','setQ','setDept','setInvDate','mapQ','mapHi','zoneView','elView','imgErr','chkSet','accSug','efSet','efRefresh','cloud','setInvState'];
   Object.keys(A).forEach(function(k){var f=A[k];if(typeof f!=='function'||SKIP.indexOf(k)>=0)return;A[k]=function(){var top=DEPTH===0;if(top)T0=Date.now();DEPTH++;try{return f.apply(this,arguments);}finally{DEPTH--;if(top&&DIRTY)auditNow();}};});})();
-/* ===== Sincronizare online live (Supabase) ===== */
+/* ===== Sincronizare online live (Supabase) – conturi verificate de server (v0.10) ===== */
 var CLOUD=(function(){
   var URL_='https://yeyjjotrvpvpqnpaklee.supabase.co';
   var KEYP='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlleWpqb3RydnB2cHFucGFrbGVlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQ3ODUzODgsImV4cCI6MjExMDM2MTM4OH0.tTmhRSasVrk4EihgoDAWNqu7t5mlrBRFr9H6NnCY5hU';
   /* biblioteca oficială Supabase, versiune fixă, verificată prin amprentă (SRI) */
   var LIB_URL='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.min.js';
   var LIB_SRI='sha384-gnyZit14c5lnGcarmA166QQjjJXpucw25ogZXuwH3HxxY904zHkBqmxVpelsPorb';
-  var EMAIL='echipa@depozit-esd.app',CODEK='esd-team-code',SYNCK='esd-synced-v1',PULLK='esd-lastpull-v1';
+  var CODEK='esd-team-code',SYNCK='esd-synced-v1',PULLK='esd-lastpull-v1',SESSK='esd-sess-v1',PEOPLEK='esd-people-v1',OFFK='esd-off-v1';
+  var SERVER_ONLY={accounts:1},INSERT_ONLY={audit:1,notifs:1};
   var ARR=['items','events','rentals','clients','persons','payments','shelves','zones','accounts','audit','notifs'];
   var COLS={items:1,events:1,rentals:1,clients:1,persons:1,payments:1,shelves:1,zones:1,accounts:1,audit:1,notifs:1,seen:1,prefs:1,meta:1};
   var T=window.__ESD_TEST||null;
   var sb=null,ch=null,ready=false,busy=false,again=false,started=false,connecting=false,reconciling=false;
-  var pushT=null,renderT=null,retryT=null,SYNCED={},lastPull='',status='local',lastErr='';
+  var pushT=null,renderT=null,retryT=null,SYNCED={},lastPull='',status='local',lastErr='',actor=null,authHooked=false,KEEP=null;
 
   function ls(k){try{return localStorage.getItem(k);}catch(e){return null;}}
   function canon(v){
@@ -1223,6 +1247,10 @@ var CLOUD=(function(){
   function hs(s){var h=5381,g=52711;for(var i=0;i<s.length;i++){var c=s.charCodeAt(i);h=((h<<5)+h+c)|0;g=(((g<<5)^g^c)*33)|0;}return (h>>>0).toString(36)+(g>>>0).toString(36)+s.length.toString(36);}
   function who(){try{return UI.me?pname(UI.me):'';}catch(e){return '';}}
   function linked(){return !!ls(CODEK);}
+  function lsj(k){try{return JSON.parse(localStorage.getItem(k)||'null');}catch(e){return null;}}
+  function lss(k,v){try{if(v==null)localStorage.removeItem(k);else localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+  function sess(){return lsj(SESSK);}
+  function people(){var p=lsj(PEOPLEK);return Array.isArray(p)&&p.length?p:null;}
 
   /* ---- verificarea rândurilor primite: nu intră în aplicație date cu formă greșită ---- */
   var IDRE=/^[A-Za-z0-9_.-]{1,80}$/,DRE=/^\d{4}-\d{2}-\d{2}$/;
@@ -1290,7 +1318,9 @@ var CLOUD=(function(){
   /* ---- aplică un rând venit de la server ---- */
   function applyRow(row,wholesale){
     if(!validRow(row)){try{console.warn('ESD: rând ignorat (formă greșită)',row&&row.collection,row&&row.id);}catch(e){}return false;}
-    var c=row.collection,id=String(row.id),k=c+'|'+id,cur=localGet(c,id);
+    var c=row.collection,id=String(row.id),k=c+'|'+id;
+    if(wholesale&&KEEP&&KEEP[k])return false; /* modificare locală netrimisă: are prioritate */
+    var cur=localGet(c,id);
     var lh=cur===undefined?undefined:hs(canon(cur)),sh=SYNCED[k];
     if(row.deleted){
       if(cur!==undefined&&c!=='meta'&&(wholesale||lh===sh)){delLocal(c,id);delete SYNCED[k];return true;}
@@ -1322,27 +1352,32 @@ var CLOUD=(function(){
     }
     if(wholesale&&total>0){
       var m=localMap();
-      Object.keys(m).forEach(function(k){if(!seenKeys[k]){var c=k.split('|')[0];if(c!=='meta'){delLocal(c,k.slice(c.length+1));changed=true;}}});
+      Object.keys(m).forEach(function(k){if(!seenKeys[k]&&!(KEEP&&KEEP[k])){var c=k.split('|')[0];if(c!=='meta'){delLocal(c,k.slice(c.length+1));changed=true;}}});
     }
     if(changed){if(!saveLocal())throw new Error('Nu pot salva datele pe dispozitiv (memorie plină?)');softRender();}
     persist();
     return total;
   }
 
-  /* ---- trimite modificările locale ---- */
+  /* ---- trimite modificările locale (prin funcția esd_push: rând cu rând, serverul verifică drepturile) ---- */
   async function push(){
     if(!ready||!sb)return;
+    var se=sess();if(UI.me&&se&&se.person!==UI.me){setStatus('login');return;}
     if(busy){again=true;return;}
     busy=true;
     try{
-      var m=localMap(),rows=[],hmap={},by=who();
+      var m=localMap(),rows=[],hmap={};
       Object.keys(m).forEach(function(k){
+        var c=k.split('|')[0];if(SERVER_ONLY[c])return;
         var h=hs(canon(m[k]));hmap[k]=h;
-        if(SYNCED[k]!==h){var c=k.split('|')[0];rows.push({collection:c,id:k.slice(c.length+1),data:m[k],deleted:false,updated_by:by});}
+        if(SYNCED[k]!==h)rows.push({collection:c,id:k.slice(c.length+1),data:m[k],deleted:false});
       });
       var dels=0,nS=0;
       Object.keys(SYNCED).forEach(function(k){
-        nS++;if(!(k in m)){dels++;var c=k.split('|')[0];rows.push({collection:c,id:k.slice(c.length+1),data:{},deleted:true,updated_by:by});}
+        var c=k.split('|')[0];if(SERVER_ONLY[c])return;nS++;
+        if(k in m)return;
+        if(INSERT_ONLY[c]){delete SYNCED[k];return;} /* jurnalul se păstrează pe server; local se ține doar ce e recent */
+        dels++;rows.push({collection:c,id:k.slice(c.length+1),data:{},deleted:true});
       });
       /* protecție: aplicația nu șterge niciodată zeci de înregistrări deodată; dacă pare că da, datele locale sunt stricate
          și se reiau de la echipă, în loc să fie șterse datele tuturor */
@@ -1352,12 +1387,15 @@ var CLOUD=(function(){
         SYNCED={};lastPull='';await pull(true);try{LAST=snap();}catch(e){}
         setStatus('ok');return;
       }
-      for(var i=0;i<rows.length;i+=40){
-        var part=rows.slice(i,i+40);
-        var r=await sb.from('records').upsert(part,{onConflict:'collection,id'});
+      var fails=[];
+      for(var i=0;i<rows.length;i+=100){
+        var part=rows.slice(i,i+100);
+        var r=await sb.rpc('esd_push',{p_rows:part});
         if(r.error)throw r.error;
-        part.forEach(function(x){var k=x.collection+'|'+x.id;if(x.deleted)delete SYNCED[k];else SYNCED[k]=hmap[k];});
+        var bad={};((r.data&&r.data.fails)||[]).forEach(function(f){bad[f.k]=f;fails.push(f);});
+        part.forEach(function(x){var k=x.collection+'|'+x.id;if(bad[k])return;if(x.deleted)delete SYNCED[k];else SYNCED[k]=hmap[k];});
       }
+      if(fails.length)await revert(fails);
       if(rows.length)persist();
       setStatus('ok');
     }catch(e){
@@ -1365,6 +1403,20 @@ var CLOUD=(function(){
     }finally{
       busy=false;if(again){again=false;queue();}
     }
+  }
+  /* ce a refuzat serverul revine la varianta de pe server, ca să nu rămână pe telefon ceva ce ceilalți nu văd */
+  async function revert(fails){
+    for(var i=0;i<fails.length;i++){
+      var k=fails[i].k,c=k.split('|')[0],id=k.slice(c.length+1);
+      var q=await sb.from('records').select('*').eq('collection',c).eq('id',id).maybeSingle();
+      if(q.error)continue;
+      var row=q.data;
+      if(row&&!row.deleted&&validRow(row)){setLocal(c,id,row.data);SYNCED[k]=hs(canon(row.data));}
+      else{delLocal(c,id);delete SYNCED[k];}
+    }
+    saveLocal();persist();softRender();
+    var m=fails[0].m||'';if(!m||/policy|row-level|permission|fără drept de modificare/i.test(m))m='Nu ai drept pentru această modificare; s-a revenit la varianta comună.';else m+=' S-a revenit la varianta comună.';
+    try{toast(m.length>140?m.slice(0,140)+'…':m,true);}catch(e){}
   }
   function queue(){if(!ready)return;clearTimeout(pushT);pushT=setTimeout(push,400);}
 
@@ -1392,10 +1444,10 @@ var CLOUD=(function(){
   }
 
   /* ---- indicator de stare (în antet și pe ecranul de intrare) ---- */
-  var LABEL={ok:['#5fd08a','Online'],conn:['#f2d9a1','Se conectează…'],off:['#e8472b','Fără legătură'],err:['#e8472b','Eroare la sincronizare'],local:['#9a9a9a','Doar pe acest dispozitiv']};
+  var LABEL={ok:['#5fd08a','Online'],conn:['#f2d9a1','Se conectează…'],off:['#e8472b','Fără legătură'],err:['#e8472b','Eroare la sincronizare'],local:['#9a9a9a','Doar pe acest dispozitiv'],login:['#f2d9a1','Intră cu parola ca să sincronizezi']};
   function pill(){var t=LABEL[status]||LABEL.local;return '<i style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+t[0]+';margin-right:5px"></i>'+t[1];}
   function dot(){var t=LABEL[status]||LABEL.local;return '<i title="'+t[1]+'" style="display:inline-block;width:9px;height:9px;border-radius:50%;background:'+t[0]+'"></i>';}
-  function banner(){return linked()&&(status==='off'||status==='err')?'<div class="banner warn">Fără legătură la datele comune. Poți lucra în continuare: modificările se trimit singure când revine internetul.</div>':'';}
+  function banner(){return linked()&&status==='login'&&UI.me?'<div class="banner warn">Ai intrat fără internet. Ce modifici rămâne pe acest telefon până intri din nou cu parola, cu internet.</div>':linked()&&(status==='off'||status==='err')?'<div class="banner warn">Fără legătură la datele comune. Poți lucra în continuare: modificările se trimit singure când revine internetul.</div>':'';}
   function setStatus(s){
     status=s;var i,l=document.querySelectorAll('.cst');for(i=0;i<l.length;i++)l[i].innerHTML=pill();
     l=document.querySelectorAll('.cstd');for(i=0;i<l.length;i++)l[i].innerHTML=dot();
@@ -1417,14 +1469,14 @@ var CLOUD=(function(){
     var has=linked();
     var d=box('<b>'+(has?'Date comune (online)':'Conectează dispozitivul la datele echipei')+'</b>'+
       (has?'<p>Stare: <span class="cst">'+pill()+'</span>'+(lastErr&&status!=='ok'?'<br><span style="opacity:.7">'+esc(lastErr).slice(0,160)+'</span>':'')+'</p><p>Dispozitivul este conectat la datele comune. Orice salvezi ajunge la toată echipa.</p>'
-          :'<p>Introdu codul de echipă, o singură dată pe acest dispozitiv. După aceea vezi datele comune, iar modificările apar la toți în câteva secunde.</p><input id="cgcode" type="password" autocomplete="off" autocapitalize="off" placeholder="Cod de echipă">')+
+          :'<p>Introdu codul de echipă, o singură dată pe acest dispozitiv. Apoi intri cu numele și parola ta; datele sunt comune și modificările apar la toți în câteva secunde.</p><input id="cgcode" type="password" autocomplete="off" autocapitalize="off" placeholder="Cod de echipă">')+
       '<div class="cge">'+esc(msg||'')+'</div>'+
       (has?'<button id="cgsync">Sincronizează acum</button><button id="cgskip" class="alt">Închide</button><button id="cgout" class="alt">Deconectează acest dispozitiv</button>'
           :'<button id="cgok">Conectează</button><button id="cgskip" class="alt">Mod demo, doar pe acest dispozitiv</button>'));
     var inp=document.getElementById('cgcode'),ok=document.getElementById('cgok'),sy=document.getElementById('cgsync'),o=document.getElementById('cgout');
     if(ok)ok.onclick=function(){var v=inp.value.trim();if(!v)return;connect(v,true);};
     if(inp)inp.onkeydown=function(ev){if(ev.key==='Enter')ok.click();};
-    if(sy)sy.onclick=function(){hideBox();if(ready)reconcile();else connect(ls(CODEK));};
+    if(sy)sy.onclick=function(){hideBox();if(ready)reconcile();else if(status==='login')showGate('Intră cu numele și parola ta ca să sincronizezi.');else connect(ls(CODEK));};
     document.getElementById('cgskip').onclick=function(){hideBox();};
     if(o)o.onclick=function(){
       box('<b>Deconectezi dispozitivul?</b><p>Datele comune rămân la echipă. De pe acest dispozitiv se șterge copia locală și aplicația revine la datele de exemplu.</p><button id="cgyes">Da, deconectează</button><button id="cgno" class="alt">Renunță</button>');
@@ -1435,7 +1487,8 @@ var CLOUD=(function(){
   function unlink(){
     ready=false;clearTimeout(pushT);clearTimeout(retryT);
     try{if(ch&&sb)sb.removeChannel(ch);}catch(e){}
-    try{[CODEK,SYNCK,PULLK,KEY].forEach(function(k){localStorage.removeItem(k);});}catch(e){}
+    try{if(sb)sb.auth.signOut();}catch(e){}
+    try{[CODEK,SYNCK,PULLK,KEY,SESSK,PEOPLEK,OFFK,'esd-auth'].forEach(function(k){localStorage.removeItem(k);});}catch(e){}
     ch=null;SYNCED={};lastPull='';hideBox();
     if(T){setStatus('local');return;}
     location.reload();
@@ -1451,39 +1504,43 @@ var CLOUD=(function(){
     });
   }
 
-  /* ---- conectare ---- */
+  function client(){
+    if(!sb){
+      sb=window.supabase.createClient(URL_,KEYP,{auth:{persistSession:true,autoRefreshToken:true,storageKey:'esd-auth',detectSessionInUrl:false}});
+    }
+    if(!authHooked&&sb.auth.onAuthStateChange){authHooked=true;
+      sb.auth.onAuthStateChange(function(ev){
+        if(ev!=='SIGNED_OUT')return;
+        ready=false;try{if(ch)sb.removeChannel(ch);}catch(e){}ch=null;lss(SESSK,null);setStatus('login');
+        if(UI.me){try{toast('Sesiunea s-a încheiat (parolă schimbată sau cont oprit). Intră din nou.',true);}catch(e){}UI.me=null;UI.profile=null;try{closeModal();render();}catch(e){}}
+      });
+    }
+    return sb;
+  }
+  async function refreshPeople(code){
+    var r=await sb.rpc('esd_people',{p_code:code});
+    if(r.error)throw r.error;
+    if(!r.data||!r.data.ok)return false;
+    lss(PEOPLEK,r.data.people||[]);return true;
+  }
+
+  /* ---- legarea dispozitivului: doar verifică codul de echipă ---- */
   async function connect(code,fromGate){
     if(connecting||!code)return false;connecting=true;setStatus('conn');
-    var first=!ls(SYNCK)||ls(CODEK)!==code||!S.linked;
-    if(fromGate||first)box('<b>Se conectează…</b><p>Se încarcă datele comune ale echipei. Durează câteva secunde.</p>');
+    if(fromGate)box('<b>Se conectează…</b><p>Se verifică codul de echipă.</p>');
     try{
-      await loadLib();
-      if(!sb)sb=window.supabase.createClient(URL_,KEYP,{auth:{persistSession:false,autoRefreshToken:true}});
-      var a=await sb.auth.signInWithPassword({email:EMAIL,password:code});
-      if(a.error){
-        if(a.error.status===400||/invalid/i.test(a.error.message||'')){
-          try{localStorage.removeItem(CODEK);}catch(e){}
-          connecting=false;ready=false;setStatus('local');showGate('Cod greșit. Încearcă din nou.');return false;
-        }
-        throw a.error;
+      await loadLib();client();
+      var ok=await refreshPeople(code);
+      if(!ok){
+        try{localStorage.removeItem(CODEK);}catch(e){}
+        connecting=false;ready=false;setStatus('local');showGate(fromGate?'Cod greșit. Încearcă din nou.':'Codul de echipă s-a schimbat. Cere-l de la administrator.');return false;
       }
-      try{localStorage.setItem(CODEK,code);}catch(e){}
-      if(first){SYNCED={};lastPull='';}
-      else{try{SYNCED=JSON.parse(ls(SYNCK))||{};}catch(e){SYNCED={};}lastPull=ls(PULLK)||'';}
-      await pull(first);
-      if(first){S.linked=true;S.v=SCHEMA;try{LAST=snap();}catch(e){}if(!saveLocal())throw new Error('Nu pot salva datele pe dispozitiv (memorie plină?)');persist();try{render();}catch(e){}}
-      ready=true;
-      if(ch){try{sb.removeChannel(ch);}catch(e){}}
-      ch=sb.channel('records-live').on('postgres_changes',{event:'*',schema:'public',table:'records'},function(p){
-        var row=p&&p.new;if(!row||!row.collection)return;
-        if(applyRow(row,false)){if(saveLocal())persist();softRender();}
-      }).subscribe(function(s){
-        if(s==='SUBSCRIBED'){reconcile();}
-        else if(s==='CHANNEL_ERROR'||s==='TIMED_OUT'){if(ready&&status==='ok')setStatus('off');}
-      });
-      await push();
-      if(status!=='err')setStatus('ok');
+      if(ls(CODEK)!==code){try{localStorage.setItem(CODEK,code);}catch(e){}lss(SYNCK,null);lss(PULLK,null);S.linked=false;saveLocal();}
       connecting=false;lastErr='';hideBox();
+      var g=await sb.auth.getSession(),se=sess();
+      if(g&&g.data&&g.data.session&&se&&se.uid===g.data.session.user.id)await startSync(false);
+      else{ready=false;setStatus('login');}
+      if(!UI.me){try{render();}catch(e){}}
       return true;
     }catch(e){
       connecting=false;ready=false;lastErr=String((e&&e.message)||e);setStatus('off');
@@ -1493,21 +1550,104 @@ var CLOUD=(function(){
     }
   }
 
+  /* ---- sincronizarea, pentru contul conectat ---- */
+  async function startSync(whole){
+    var se=sess();
+    var first=whole||!ls(SYNCK)||!S.linked;
+    KEEP=null;
+    if(first&&S.linked&&ls(SYNCK)){ /* schimbare de cont: ce s-a modificat local și nu a plecat încă nu se pierde */
+      var old={};try{old=JSON.parse(ls(SYNCK))||{};}catch(e){}var lm=localMap();KEEP={};
+      Object.keys(lm).forEach(function(k){var c=k.split('|')[0];if(!SERVER_ONLY[c]&&old[k]!==hs(canon(lm[k])))KEEP[k]=1;});
+    }
+    if(first){SYNCED={};lastPull='';box('<b>Se încarcă datele echipei…</b><p>Durează câteva secunde.</p>');}
+    else{try{SYNCED=JSON.parse(ls(SYNCK))||{};}catch(e){SYNCED={};}lastPull=ls(PULLK)||'';}
+    try{
+      try{await pull(first);}finally{KEEP=null;}
+      if(first){S.linked=true;S.v=SCHEMA;try{LAST=snap();}catch(e){}if(!saveLocal())throw new Error('Nu pot salva datele pe dispozitiv (memorie plină?)');persist();try{render();}catch(e){}}
+      ready=true;
+      if(ch){try{sb.removeChannel(ch);}catch(e){}}
+      ch=sb.channel('records-live-'+(se?se.acc:'x')).on('postgres_changes',{event:'*',schema:'public',table:'records'},function(p){
+        var row=p&&p.new;if(!row||!row.collection)return;
+        if(applyRow(row,false)){if(saveLocal())persist();softRender();}
+      }).subscribe(function(st){
+        if(st==='SUBSCRIBED'){reconcile();}
+        else if(st==='CHANNEL_ERROR'||st==='TIMED_OUT'){if(ready&&status==='ok')setStatus('off');}
+      });
+      await push();
+      if(status!=='err')setStatus('ok');
+      hideBox();
+    }catch(e){
+      hideBox();ready=false;lastErr=String((e&&e.message)||e);setStatus('off');
+      clearTimeout(retryT);retryT=setTimeout(function(){var c=ls(CODEK);if(c)connect(c);},12000);
+    }
+  }
+
+  /* ---- intrarea cu parola: serverul găsește contul după parolă ---- */
+  async function offVerify(pid,pw){var o=lsj(OFFK)||{},h=pwHash('OFF|'+pid+'|'+pw);return (o[pid]||[]).filter(function(x){return x.h===h;})[0]||null;}
+  function offSave(pid,pw,role,acc){var o=lsj(OFFK)||{},h=pwHash('OFF|'+pid+'|'+pw);o[pid]=(o[pid]||[]).filter(function(x){return x.acc!==acc;});o[pid].push({h:h,role:role,acc:acc});lss(OFFK,o);}
+  async function offlineLogin(pid,pw){
+    var v=await offVerify(pid,pw);
+    if(!v)return {ok:false,why:'net'};
+    var se=sess();if(!se||se.acc!==v.acc){ready=false;setStatus('login');}
+    return {ok:true,role:v.role,offline:true};
+  }
+  async function login(pid,pw){
+    var code=ls(CODEK);if(!code)return {ok:false,why:'code'};
+    try{await loadLib();client();}catch(e){return offlineLogin(pid,pw);}
+    var r;try{r=await sb.rpc('esd_resolve',{p_code:code,p_person:pid,p_password:pw});}catch(e){r={error:e};}
+    if(r.error)return offlineLogin(pid,pw);
+    var res=r.data||{};
+    if(!res.ok){
+      if(res.why==='code'){try{localStorage.removeItem(CODEK);}catch(e){}showGate('Codul de echipă s-a schimbat. Cere-l de la administrator.');}
+      return {ok:false,why:res.why||'bad'};
+    }
+    var se=sess(),g=await sb.auth.getSession(),cur=g&&g.data&&g.data.session;
+    if(!(cur&&se&&se.acc===res.account&&se.uid===cur.user.id)){
+      if(ready&&se&&actor===se.person){try{await push();}catch(e){}}
+      ready=false;try{if(ch)sb.removeChannel(ch);}catch(e){}ch=null;
+      var a=await sb.auth.signInWithPassword({email:res.email,password:code+':'+pw});
+      if(a.error)return {ok:false,why:'server',m:a.error.message};
+      var uid=a.data&&a.data.user?a.data.user.id:(a.data&&a.data.session?a.data.session.user.id:'');
+      var changed=!se||se.uid!==uid;
+      lss(SESSK,{acc:res.account,uid:uid,person:pid,role:res.role});
+      offSave(pid,pw,res.role,res.account);actor=pid;
+      await startSync(changed);
+    }else{offSave(pid,pw,res.role,res.account);actor=pid;if(!ready)await startSync(false);}
+    try{refreshPeople(code);}catch(e){}
+    return {ok:true,role:res.role};
+  }
+
+  /* ---- administrarea conturilor (doar Administrator, verificat de server) ---- */
+  async function admin(fn,args){
+    if(!sb||!ready)return {ok:false,why:'net'};
+    var r=await sb.rpc(fn,args);
+    if(r.error)return {ok:false,why:'err',m:r.error.message};
+    if(r.data&&r.data.ok)await reconcile();
+    return r.data||{ok:false};
+  }
+  function secret(pw){return (ls(CODEK)||'')+':'+pw;}
+
   function start(){
     if(started)return;started=true;setStatus('local');
     if(!T&&!/^https?:$/.test(location.protocol))return;
     var code=ls(CODEK);
     if(code)connect(code);else if(!T||T.gate)showGate('');
-    window.addEventListener('online',function(){var c=ls(CODEK);if(c&&!ready)connect(c);else reconcile();});
-    document.addEventListener('visibilitychange',function(){if(!document.hidden){var c=ls(CODEK);if(c&&!ready)connect(c);else reconcile();}});
+    actor=(sess()||{}).person||null;
+    window.addEventListener('online',function(){var c=ls(CODEK);if(c&&!ready&&status!=='login')connect(c);else reconcile();});
+    document.addEventListener('visibilitychange',function(){if(!document.hidden){var c=ls(CODEK);if(c&&!ready&&status!=='login')connect(c);else reconcile();}});
     /* plasă de siguranță: chiar dacă legătura live cade, datele se aliniază la fiecare 25 de secunde */
     setInterval(function(){if(!document.hidden)reconcile();},T?T.poll||600000:25000);
   }
-  return {start:start,queue:queue,push:push,pull:pull,reconcile:reconcile,connect:connect,open:function(){showGate('');},pill:pill,dot:dot,banner:banner,linked:linked,validRow:validRow,applyRow:applyRow,
+  return {start:start,queue:queue,push:push,pull:pull,reconcile:reconcile,connect:connect,login:login,people:people,open:function(){showGate('');},pill:pill,dot:dot,banner:banner,linked:linked,validRow:validRow,applyRow:applyRow,
+    adminCreate:function(pid,role,pw){return admin('esd_admin_create',{p_person:pid,p_role:role,p_secret:secret(pw)});},
+    adminPassword:function(acc,pw){return admin('esd_admin_password',{p_account:acc,p_secret:secret(pw)});},
+    adminEnable:function(acc,on){return admin('esd_admin_enable',{p_account:acc,p_on:on});},
+    adminDelete:function(acc){return admin('esd_admin_delete',{p_account:acc});},
+    get session(){return sess();},
     get status(){return status;},get ready(){return ready;},get synced(){return SYNCED;},canon:canon,hs:hs};
 })();
 load();LAST=snap();render();try{CLOUD.start();}catch(e){}
-window.__esd={cloud:CLOUD,shortages:shortages,reload:function(){load();LAST=snap();render();},get state(){return S;},avail:avail,seed:seed,UI:UI,as:function(pid,role){UI.me=pid;UI.profile=role;UI.tab='inv';UI.more='';LAST=snap();render();},sha:sha256,blockers:blockers};
+window.__esd={cloud:CLOUD,save:function(){save();},shortages:shortages,reload:function(){load();LAST=snap();render();},get state(){return S;},avail:avail,seed:seed,UI:UI,as:function(pid,role){UI.me=pid;UI.profile=role;UI.tab='inv';UI.more='';LAST=snap();render();},sha:sha256,blockers:blockers};
 })();
 </script>
 <script>
