@@ -149,6 +149,17 @@ header.top{padding-top:calc(10px + env(safe-area-inset-top));padding-left:calc(1
 body{padding-bottom:env(safe-area-inset-bottom);-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%;overscroll-behavior-y:none}
 button,.chip,nav.bottom button{-webkit-user-select:none;user-select:none;touch-action:manipulation}
 input,select,textarea{font-size:16px}
+
+#cloudpill{position:fixed;top:calc(2px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);z-index:60;font-size:10px;color:#f4ead6;display:flex;gap:5px;align-items:center;background:rgba(0,0,0,.55);padding:1px 8px;border-radius:9px;cursor:pointer;white-space:nowrap}
+#cloudpill i{width:7px;height:7px;border-radius:50%;display:inline-block}
+#cloudgate{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center;padding:20px}
+#cloudgate[hidden]{display:none}
+#cloudgate .cg{background:var(--card);border:1px solid #3a3a3d;border-radius:14px;padding:18px;max-width:340px;width:100%;display:flex;flex-direction:column;gap:10px;color:var(--ink)}
+#cloudgate .cg p{margin:0;font-size:13px;opacity:.85}
+#cloudgate .cg input{padding:11px;border-radius:10px;border:1px solid #444;background:#1b1b1d;color:var(--ink);font-size:16px}
+#cloudgate .cg button{background:var(--grad);color:#fff;border:0;border-radius:10px;padding:11px;font-weight:700;font-size:15px}
+#cloudgate .cg button.alt{background:#34343a;color:var(--ink);font-weight:600}
+#cloudgate .cge{color:#ff8a70;font-size:13px;min-height:16px}
 </style>
 </head>
 <body>
@@ -185,7 +196,7 @@ function validDate(s){return /^\d{4}-\d{2}-\d{2}$/.test(s||'')&&!isNaN(parse(s).
 function money(n){return (Math.round(n*100)/100).toLocaleString('ro-RO')+' lei';}
 function $(id){return document.getElementById(id);}
 function toast(m,bad){var t=document.createElement('div');t.textContent=m;if(bad)t.className='bad';$('toast').appendChild(t);setTimeout(function(){t.remove();},bad?4200:2400);}
-var VERSION='v0.8.2';
+var VERSION='v0.9.0';
 var ZONES0=[
  {id:'c1',name:'Camera 1',desc:'Ultima din video, după ușă: frigider, rafturi și multe flightcase-uri diferite.',x:10,y:10,w:320,h:170},
  {id:'c2',name:'Camera 2',desc:'A doua din video: sunet, rafturi și un birou.',x:10,y:190,w:320,h:150},
@@ -373,7 +384,7 @@ function recName(k,r){
   return r.name||r.id;
 }
 function saveRaw(){
-  try{localStorage.setItem(KEY,JSON.stringify(S));}
+  try{localStorage.setItem(KEY,JSON.stringify(S));if(window.CLOUD)CLOUD.queue();}
   catch(e){toast('Nu s-au putut salva datele (memoria browserului e plină). Folosește poze mai mici sau Resetează.',true);}
 }
 function save(){DIRTY=true;if(DEPTH===0)auditNow();else saveRaw();}
@@ -499,7 +510,7 @@ function loginView(){
   '<div class="loginbox"><label>Cine ești?</label><select id="lg-me">'+S.persons.map(function(p){return '<option value="'+p.id+'">'+esc(p.name)+(p.dept&&p.dept!=='—'?' ('+esc(p.dept)+')':'')+'</option>';}).join('')+'</select>'+
   '<label>Parola</label><input id="lg-pw" type="password" autocomplete="off" autocapitalize="none" onkeydown="if(event.key===\'Enter\')A.login()">'+
   '<button class="btn primary block" style="margin-top:18px" onclick="A.login()">Intră</button></div>'+
-  '<div class="login-foot">Demo cu date de exemplu · parola hotărăște rolul · datele rămân în acest browser<br>Demo Depozit ESD '+VERSION+'</div></div>';
+  '<div class="login-foot">Demo cu date de exemplu · parola hotărăște rolul · datele se sincronizează online când ești conectat<br>Demo Depozit ESD '+VERSION+'</div></div>';
 }
 
 /* ---------- inventar ---------- */
@@ -937,7 +948,7 @@ var A={
       if(!/^image\//.test(f.type)){toast('Alege o imagine.',true);return;}
       var rd=new FileReader();rd.onload=function(){var im=new Image();im.onload=function(){var s=Math.min(1,240/Math.max(im.width,im.height));var c=document.createElement('canvas');c.width=Math.round(im.width*s);c.height=Math.round(im.height*s);c.getContext('2d').drawImage(im,0,0,c.width,c.height);
         var it=item(id);if(!it)return;var old=it.photo;it.photo=c.toDataURL('image/jpeg',.72);
-        try{localStorage.setItem(KEY,JSON.stringify(S));toast('Poză schimbată.');}catch(e){it.photo=old;toast('Poza nu s-a putut salva: memoria browserului e plină.',true);}
+        try{localStorage.setItem(KEY,JSON.stringify(S));if(window.CLOUD)CLOUD.queue();toast('Poză schimbată.');}catch(e){it.photo=old;toast('Poza nu s-a putut salva: memoria browserului e plină.',true);}
         closeModal();render();};im.onerror=function(){toast('Imaginea nu poate fi citită.',true);};im.src=rd.result;};rd.readAsDataURL(f);};
     inp.click();
   },
@@ -1153,8 +1164,229 @@ document.addEventListener('keydown',function(e){if(e.key==='Escape')closeModal()
 $('modal').addEventListener('click',function(e){if(e.target===$('modal'))closeModal();});
 (function(){var SKIP=['login','logout','go','close','setQ','setDept','setInvDate','mapQ','mapHi','zoneView','elView','imgErr','chkSet','accSug','efSet','efRefresh'];
   Object.keys(A).forEach(function(k){var f=A[k];if(typeof f!=='function'||SKIP.indexOf(k)>=0)return;A[k]=function(){var top=DEPTH===0;if(top)T0=Date.now();DEPTH++;try{return f.apply(this,arguments);}finally{DEPTH--;if(top&&DIRTY)auditNow();}};});})();
-load();LAST=snap();render();
-window.__esd={get state(){return S;},avail:avail,seed:seed,UI:UI,as:function(pid,role){UI.me=pid;UI.profile=role;UI.tab='inv';UI.more='';LAST=snap();render();},sha:sha256,blockers:blockers};
+/* ===== Sincronizare online live (Supabase) – v0.9.0 ===== */
+var CLOUD=(function(){
+  var URL_='https://yeyjjotrvpvpqnpaklee.supabase.co';
+  var KEYP='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlleWpqb3RydnB2cHFucGFrbGVlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQ3ODUzODgsImV4cCI6MjExMDM2MTM4OH0.tTmhRSasVrk4EihgoDAWNqu7t5mlrBRFr9H6NnCY5hU';
+  var EMAIL='echipa@depozit-esd.app',CODEK='esd-team-code',SYNCK='esd-synced-v1',PULLK='esd-lastpull-v1';
+  var ARR=['items','events','rentals','clients','persons','payments','shelves','zones','accounts','audit','notifs'];
+  var sb=null,ch=null,ready=false,busy=false,again=false,started=false,connecting=false,reconciling=false;
+  var pushT=null,renderT=null,retryT=null,SYNCED={},lastPull='',status='local';
+
+  function canon(v){
+    if(v===null||typeof v!=='object')return v===undefined?'null':JSON.stringify(v);
+    if(Array.isArray(v))return '['+v.map(canon).join(',')+']';
+    return '{'+Object.keys(v).filter(function(k){return v[k]!==undefined;}).sort().map(function(k){return JSON.stringify(k)+':'+canon(v[k]);}).join(',')+'}';
+  }
+  function hs(s){var h=5381,g=52711;for(var i=0;i<s.length;i++){var c=s.charCodeAt(i);h=((h<<5)+h+c)|0;g=(((g<<5)^g^c)*33)|0;}return (h>>>0).toString(36)+(g>>>0).toString(36)+s.length.toString(36);}
+  function who(){try{return UI.me?pname(UI.me):'';}catch(e){return '';}}
+
+  /* ---- starea locală ca hartă cheie -> înregistrare ---- */
+  function localMap(){
+    var m={};
+    ARR.forEach(function(c){(S[c]||[]).forEach(function(r){if(r&&r.id!=null)m[c+'|'+r.id]=r;});});
+    Object.keys(S.seen||{}).forEach(function(k){m['seen|'+k]={v:S.seen[k]};});
+    m['meta|settings']=S.settings||{};
+    m['meta|components']={list:S.components||[]};
+    return m;
+  }
+  function idx(c,id){var a=S[c]||[];for(var i=0;i<a.length;i++)if(String(a[i].id)===id)return i;return -1;}
+  function localGet(c,id){
+    if(c==='seen'){return (S.seen&&(id in S.seen))?{v:S.seen[id]}:undefined;}
+    if(c==='meta')return id==='settings'?S.settings:{list:S.components};
+    var i=idx(c,id);return i<0?undefined:S[c][i];
+  }
+  function setLocal(c,id,d){
+    if(c==='seen'){if(!S.seen)S.seen={};S.seen[id]=d.v;return;}
+    if(c==='meta'){if(id==='settings')S.settings=d;else S.components=d.list||[];return;}
+    if(!S[c])S[c]=[];
+    var i=idx(c,id);if(i>=0)S[c][i]=d;else S[c].push(d);
+    if(c==='audit'||c==='notifs')S[c].sort(function(a,b){return (b.at||0)-(a.at||0);});
+    if(LAST&&LAST[c])LAST[c][id]=JSON.stringify(d);
+  }
+  function delLocal(c,id){
+    if(c==='seen'){if(S.seen)delete S.seen[id];return;}
+    if(c==='meta')return;
+    var i=idx(c,id);if(i>=0)S[c].splice(i,1);
+    if(LAST&&LAST[c])delete LAST[c][id];
+  }
+
+  /* ---- aplică un rând venit de la server ---- */
+  function applyRow(row,wholesale){
+    var c=row.collection,id=String(row.id),k=c+'|'+id,cur=localGet(c,id);
+    var lh=cur===undefined?undefined:hs(canon(cur)),sh=SYNCED[k];
+    if(row.deleted){
+      if(cur!==undefined&&(wholesale||lh===sh)){delLocal(c,id);delete SYNCED[k];return true;}
+      if(cur===undefined)delete SYNCED[k];
+      return false;
+    }
+    var rh=hs(canon(row.data));
+    if(lh===rh){SYNCED[k]=rh;return false;}
+    var ok=cur===undefined?(sh===undefined||wholesale):(wholesale||lh===sh);
+    if(ok){setLocal(c,id,row.data);SYNCED[k]=rh;return true;}
+    return false; /* modificat local: câștigă varianta locală, se trimite la următorul push */
+  }
+  function persist(){
+    try{localStorage.setItem(SYNCK,JSON.stringify(SYNCED));localStorage.setItem(PULLK,lastPull||'');}catch(e){}
+  }
+
+  /* ---- descarcă modificările ---- */
+  async function pull(wholesale){
+    var cursor=wholesale?'':lastPull,total=0,changed=false,seenKeys={};
+    if(cursor)cursor=new Date(Date.parse(cursor)-10000).toISOString();
+    for(;;){
+      var q=sb.from('records').select('*').order('updated_at',{ascending:true}).limit(500);
+      if(cursor)q=q.gt('updated_at',cursor);
+      var r=await q;if(r.error)throw r.error;
+      var rows=r.data||[];
+      rows.forEach(function(row){seenKeys[row.collection+'|'+row.id]=1;if(applyRow(row,wholesale))changed=true;lastPull=row.updated_at>lastPull?row.updated_at:lastPull;});
+      total+=rows.length;
+      if(rows.length<500)break;
+      cursor=rows[rows.length-1].updated_at;
+    }
+    if(wholesale&&total>0){
+      var m=localMap();
+      Object.keys(m).forEach(function(k){if(!seenKeys[k]){var c=k.split('|')[0];if(c!=='meta'){delLocal(c,k.slice(c.length+1));changed=true;}}});
+    }
+    persist();
+    if(changed){try{saveRawLocal();}catch(e){}softRender();}
+    return total;
+  }
+  function saveRawLocal(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
+
+  /* ---- trimite modificările locale ---- */
+  async function push(){
+    if(!ready||!sb)return;
+    if(busy){again=true;return;}
+    busy=true;
+    try{
+      var m=localMap(),rows=[],hmap={},by=who();
+      Object.keys(m).forEach(function(k){
+        var h=hs(canon(m[k]));hmap[k]=h;
+        if(SYNCED[k]!==h){var c=k.split('|')[0];rows.push({collection:c,id:k.slice(c.length+1),data:m[k],deleted:false,updated_by:by});}
+      });
+      Object.keys(SYNCED).forEach(function(k){
+        if(!(k in m)){var c=k.split('|')[0];rows.push({collection:c,id:k.slice(c.length+1),data:{},deleted:true,updated_by:by});}
+      });
+      for(var i=0;i<rows.length;i+=40){
+        var part=rows.slice(i,i+40);
+        var r=await sb.from('records').upsert(part,{onConflict:'collection,id'});
+        if(r.error)throw r.error;
+        part.forEach(function(x){var k=x.collection+'|'+x.id;if(x.deleted)delete SYNCED[k];else SYNCED[k]=hmap[k];});
+      }
+      persist();setStatus('ok');
+    }catch(e){
+      setStatus('err');clearTimeout(retryT);retryT=setTimeout(function(){reconcile();},8000);
+    }finally{
+      busy=false;if(again){again=false;queue();}
+    }
+  }
+  function queue(){if(!ready)return;clearTimeout(pushT);pushT=setTimeout(push,700);}
+
+  async function reconcile(){
+    if(!ready||!sb||reconciling)return;
+    reconciling=true;
+    try{await pull(false);await push();}
+    catch(e){setStatus('off');clearTimeout(retryT);retryT=setTimeout(function(){var c=localStorage.getItem(CODEK);if(c)connect(c);},12000);}
+    finally{reconciling=false;}
+  }
+
+  /* ---- reîncarcă ecranul fără să strice ce scrie omul ---- */
+  function softRender(){
+    clearTimeout(renderT);
+    renderT=setTimeout(function(){
+      var a=document.activeElement,typing=a&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName);
+      var md=document.getElementById('modal'),modal=md&&!md.hidden;
+      if(typing||modal){softRender();return;}
+      var y=window.scrollY;try{render();}catch(e){}window.scrollTo(0,y);
+    },1200);
+  }
+
+  /* ---- indicator de stare ---- */
+  function setStatus(s){
+    status=s;
+    var e=document.getElementById('cloudpill');
+    if(!e){e=document.createElement('div');e.id='cloudpill';e.onclick=function(){showGate('');};document.body.appendChild(e);}
+    var t={ok:['#5fd08a','Online'],conn:['#f2d9a1','Se conectează…'],off:['#e8472b','Offline – se sincronizează la revenire'],err:['#e8472b','Eroare sincronizare'],local:['#9a9a9a','Doar local'],gate:['#f2d9a1','Cod echipă']}[s]||['#999',s];
+    e.innerHTML='<i style="background:'+t[0]+'"></i><span>'+t[1]+'</span>';
+    e.title=t[1]+' – apasă pentru conectare';
+  }
+
+  /* ---- fereastra cu codul de echipă ---- */
+  function showGate(msg){
+    var d=document.getElementById('cloudgate');
+    if(!d){d=document.createElement('div');d.id='cloudgate';document.body.appendChild(d);}
+    var has=!!localStorage.getItem(CODEK);
+    d.innerHTML='<div class="cg"><b>Conectare echipă (online)</b><p>Introdu codul de echipă, o singură dată pe acest dispozitiv. După asta vezi datele comune și modificările apar live la toți.</p>'+
+      '<input id="cgcode" type="password" autocomplete="off" autocapitalize="off" placeholder="Cod echipă"><div class="cge">'+(msg||'')+'</div>'+
+      '<button id="cgok">Conectează</button><button id="cgskip" class="alt">'+(has?'Închide':'Continuă doar local')+'</button>'+
+      (has?'<button id="cgout" class="alt">Deconectează acest dispozitiv</button>':'')+'</div>';
+    d.hidden=false;
+    var inp=document.getElementById('cgcode');
+    document.getElementById('cgok').onclick=function(){var v=inp.value.trim();if(!v)return;d.hidden=true;connect(v,true);};
+    inp.onkeydown=function(ev){if(ev.key==='Enter')document.getElementById('cgok').click();};
+    document.getElementById('cgskip').onclick=function(){d.hidden=true;if(!has)setStatus('local');};
+    var o=document.getElementById('cgout');
+    if(o)o.onclick=function(){try{localStorage.removeItem(CODEK);localStorage.removeItem(SYNCK);localStorage.removeItem(PULLK);}catch(e){}ready=false;if(ch&&sb)sb.removeChannel(ch);ch=null;SYNCED={};lastPull='';d.hidden=true;setStatus('local');};
+  }
+
+  function loadLib(){
+    return new Promise(function(res,rej){
+      if(window.supabase&&window.supabase.createClient)return res();
+      var s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js';
+      s.onload=res;s.onerror=function(){rej(new Error('lib'));};document.head.appendChild(s);
+    });
+  }
+
+  /* ---- conectare ---- */
+  async function connect(code,fromGate){
+    if(connecting)return;connecting=true;setStatus('conn');
+    try{
+      await loadLib();
+      if(!sb)sb=window.supabase.createClient(URL_,KEYP,{auth:{persistSession:false,autoRefreshToken:true}});
+      var a=await sb.auth.signInWithPassword({email:EMAIL,password:code});
+      if(a.error){
+        if(a.error.status===400||/invalid/i.test(a.error.message||'')){try{localStorage.removeItem(CODEK);}catch(e){}connecting=false;showGate('Cod greșit. Încearcă din nou.');return false;}
+        throw a.error;
+      }
+      try{localStorage.setItem(CODEK,code);}catch(e){}
+      var first=!localStorage.getItem(SYNCK);
+      if(first){SYNCED={};lastPull='';}
+      else{try{SYNCED=JSON.parse(localStorage.getItem(SYNCK))||{};}catch(e){SYNCED={};}lastPull=localStorage.getItem(PULLK)||'';}
+      var n=await pull(first);
+      ready=true;
+      if(ch){try{sb.removeChannel(ch);}catch(e){}}
+      ch=sb.channel('records-live').on('postgres_changes',{event:'*',schema:'public',table:'records'},function(p){
+        var row=p.new;if(!row||!row.collection)return;
+        if(applyRow(row,false)){persist();saveRawLocal();softRender();}
+      }).subscribe(function(s){
+        if(s==='SUBSCRIBED'){reconcile();}
+        else if(s==='CHANNEL_ERROR'||s==='TIMED_OUT'||s==='CLOSED'){if(ready)setStatus('off');}
+      });
+      await push();
+      setStatus('ok');connecting=false;
+      return true;
+    }catch(e){
+      connecting=false;ready=false;setStatus('off');
+      clearTimeout(retryT);retryT=setTimeout(function(){var c=localStorage.getItem(CODEK);if(c)connect(c);},12000);
+      return false;
+    }
+  }
+
+  function start(){
+    if(started)return;started=true;setStatus('local');
+    if(!/^https?:$/.test(location.protocol))return;
+    var code=null;try{code=localStorage.getItem(CODEK);}catch(e){}
+    if(code)connect(code);else showGate('');
+    window.addEventListener('online',function(){var c=localStorage.getItem(CODEK);if(c&&!ready)connect(c);else reconcile();});
+    document.addEventListener('visibilitychange',function(){if(!document.hidden)reconcile();});
+    setInterval(function(){if(!document.hidden)reconcile();},60000);
+  }
+  return {start:start,queue:queue,push:push,pull:pull,reconcile:reconcile,connect:connect,get status(){return status;},get ready(){return ready;},get synced(){return SYNCED;},canon:canon,hs:hs};
+})();
+
+load();LAST=snap();render();try{CLOUD.start();}catch(e){}
+window.__esd={cloud:CLOUD,get state(){return S;},avail:avail,seed:seed,UI:UI,as:function(pid,role){UI.me=pid;UI.profile=role;UI.tab='inv';UI.more='';LAST=snap();render();},sha:sha256,blockers:blockers};
 })();
 </script>
 <script>
