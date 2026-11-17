@@ -2,6 +2,11 @@
 <html lang="ro">
 <head>
 <meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; connect-src 'self' https://yeyjjotrvpvpqnpaklee.supabase.co wss://yeyjjotrvpvpqnpaklee.supabase.co https://cdn.jsdelivr.net; img-src 'self' data: blob: https:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<script>/* Depozit ESD: nu rula în interiorul altui site; uneltele de test doar local */
+if(window.top!==window.self){try{window.top.location=window.self.location.href;}catch(e){document.documentElement.style.display='none';}}
+window.__ESD_DEV=!/^https?:$/.test(location.protocol)||/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);</script>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Depozit ESD</title>
 <meta name="theme-color" content="#141416">
@@ -202,7 +207,7 @@ function accRes(r,okMsg){
 }
 function deny(){toast('Nu ai drept pentru această acțiune.',true);}
 function toast(m,bad){var t=document.createElement('div');t.textContent=m;if(bad)t.className='bad';$('toast').appendChild(t);setTimeout(function(){t.remove();},bad?4200:2400);}
-var VERSION='v0.11.0',SCHEMA=9;
+var VERSION='v0.11.1',SCHEMA=9;
 var ZONES0=[
  {id:'c1',name:'Camera 1',desc:'Ultima din video, după ușă: frigider, rafturi și multe flightcase-uri diferite.',x:10,y:10,w:320,h:170},
  {id:'c2',name:'Camera 2',desc:'A doua din video: sunet, rafturi și un birou.',x:10,y:190,w:320,h:150},
@@ -259,12 +264,21 @@ function sha256(m){
   return H.map(function(x){return ('00000000'+(x>>>0).toString(16)).slice(-8);}).join('');
 }
 function pwHash(p){return sha256('ESD|'+p);}
-var ACCS0=[{"id": "a_sef_p_mario", "person": "p_mario", "role": "sef", "h": "e2f2709ed17d71a97e46315dd54ea52cdc85e8833c41bac668f7660e1c36506d", "on": true}, {"id": "a_sef_p_alin", "person": "p_alin", "role": "sef", "h": "44b45a0a11c5180cba57eda51b892e8b277d9c1e0a50fbe6b527d9003c26962d", "on": true}, {"id": "a_depozit_p_darius", "person": "p_darius", "role": "depozit", "h": "c35fe444f91a084847644978ad858d1aa8bd51302a5919bfa1b06b0d2b58651d", "on": true}, {"id": "a_admin_p_darius", "person": "p_darius", "role": "admin", "h": "f2264ce4ae2d07d5cdbb1b0bd53565c7c02b8758dbeacfb74b597c99417a472d", "on": true}, {"id": "a_resp_p_mario", "person": "p_mario", "role": "resp", "h": "e345ced1f31669fbb91f1abb11ac808c3011bff70d5659c46160f5da6275bbe2", "on": true}, {"id": "a_resp_p_geo", "person": "p_geo", "role": "resp", "h": "b987f9645c39ec34d4e02343670fb97997f13b3cb3db274dc8df9dc7e18b51ac", "on": true}, {"id": "a_resp_p_darius", "person": "p_darius", "role": "resp", "h": "f9238278edcdb89a5d58619f6c49abcf6f4f2fb01f5c72bb6122e5d9ce95f24d", "on": true}, {"id": "a_resp_p_alin", "person": "p_alin", "role": "resp", "h": "b21095ef563e3d0063e05991316593c5e166460f2d25d11dfb63f47f5a2f2af8", "on": true}, {"id": "a_resp_p_dejan", "person": "p_dejan", "role": "resp", "h": "6f2c5b328b87335113a39d80c81af4882196bb676ccd5807aa3d798801faa18e", "on": true}, {"id": "a_resp_p_axel", "person": "p_axel", "role": "resp", "h": "1c5bc46aaa0e4a0fcfac49e582f0d6e607a52f3e257e4ea49d8bc88616c18da7", "on": true}, {"id": "a_resp_p_tavi", "person": "p_tavi", "role": "resp", "h": "fe369993936d5bbfa9059814b860db65132e443ccbcaab0a4c86e8045e93c1d0", "on": true}, {"id": "a_resp_p_8", "person": "p_8", "role": "resp", "h": "638239da30441a946f4c770689e9bf69c231ba07d441b3c20c01b220750650af", "on": true}, {"id": "a_resp_p_9", "person": "p_9", "role": "resp", "h": "a86c86fdfc87604a906e7775f1dc8dc4246968b6504c34cca1356c77a1f3d28e", "on": true}, {"id": "a_tehnician_p_geo", "person": "p_geo", "role": "tehnician", "h": "812cf43654e63baf0444cd8c7d26f11583f44a51df2c3837f7cbfa5c94b815d8", "on": true}, {"id": "a_tehnician_p_darius", "person": "p_darius", "role": "tehnician", "h": "6fcfabac934f6bdf7bcf54bacb2276559c3d163f32a96a76b76a3a4dc78cb4a4", "on": true}, {"id": "a_tehnician_p_alin", "person": "p_alin", "role": "tehnician", "h": "7e89ee5bd1aed6863f05a6d4aecd6be38eb802c12151eb683d36be423e84a3bd", "on": true}, {"id": "a_tehnician_p_dejan", "person": "p_dejan", "role": "tehnician", "h": "a8566dea09fd2722cd85fcd6038d105d3899de650fceb96cfab05e4d4689bfe5", "on": true}, {"id": "a_tehnician_p_axel", "person": "p_axel", "role": "tehnician", "h": "5f98f6bc5ff25af4f038accca6add35321e6c82a4506d1545c3c053fdeb4b7fc", "on": true}, {"id": "a_tehnician_p_tavi", "person": "p_tavi", "role": "tehnician", "h": "492f77e3419f68b6cc5de0568a62685213eeb3792ec33c3952de8fd6a2de399c", "on": true}, {"id": "a_tehnician_p_8", "person": "p_8", "role": "tehnician", "h": "58d3303a1d53391e08f0eaacfb15945ba8e6aed8fd0130b9ec853935fc50a9b5", "on": true}, {"id": "a_tehnician_p_9", "person": "p_9", "role": "tehnician", "h": "fd6c8a07e26302e391433d41e3d40fedb23d56bea49ea18f473f00607908845b", "on": true}];
+var ACCS0=[{"id": "a_sef_p_mario", "person": "p_mario", "role": "sef", "h": "d4381234f30cadc07f995533778c6eaa2fa84f41c0f43cae06c77f1713ccbc0b", "on": true}, {"id": "a_sef_p_alin", "person": "p_alin", "role": "sef", "h": "d4381234f30cadc07f995533778c6eaa2fa84f41c0f43cae06c77f1713ccbc0b", "on": true}, {"id": "a_depozit_p_darius", "person": "p_darius", "role": "depozit", "h": "9c0a71e6f6c1b9392e6b859c165564c73f295a002da4178b82af896f0cdc2bdb", "on": true}, {"id": "a_admin_p_darius", "person": "p_darius", "role": "admin", "h": "521d813fc9b32d57e3d2be9e15787c3b462dd6eb31a6ba6c00f048fdac68d849", "on": true}, {"id": "a_resp_p_mario", "person": "p_mario", "role": "resp", "h": "84a0dd2a6647afc0b42e1b70087edc71602eb4357dc2b61fc85420b57013c4dc", "on": true}, {"id": "a_resp_p_geo", "person": "p_geo", "role": "resp", "h": "84a0dd2a6647afc0b42e1b70087edc71602eb4357dc2b61fc85420b57013c4dc", "on": true}, {"id": "a_resp_p_darius", "person": "p_darius", "role": "resp", "h": "84a0dd2a6647afc0b42e1b70087edc71602eb4357dc2b61fc85420b57013c4dc", "on": true}, {"id": "a_resp_p_alin", "person": "p_alin", "role": "resp", "h": "84a0dd2a6647afc0b42e1b70087edc71602eb4357dc2b61fc85420b57013c4dc", "on": true}, {"id": "a_resp_p_dejan", "person": "p_dejan", "role": "resp", "h": "84a0dd2a6647afc0b42e1b70087edc71602eb4357dc2b61fc85420b57013c4dc", "on": true}, {"id": "a_resp_p_axel", "person": "p_axel", "role": "resp", "h": "84a0dd2a6647afc0b42e1b70087edc71602eb4357dc2b61fc85420b57013c4dc", "on": true}, {"id": "a_resp_p_tavi", "person": "p_tavi", "role": "resp", "h": "84a0dd2a6647afc0b42e1b70087edc71602eb4357dc2b61fc85420b57013c4dc", "on": true}, {"id": "a_resp_p_8", "person": "p_8", "role": "resp", "h": "84a0dd2a6647afc0b42e1b70087edc71602eb4357dc2b61fc85420b57013c4dc", "on": true}, {"id": "a_resp_p_9", "person": "p_9", "role": "resp", "h": "84a0dd2a6647afc0b42e1b70087edc71602eb4357dc2b61fc85420b57013c4dc", "on": true}, {"id": "a_tehnician_p_geo", "person": "p_geo", "role": "tehnician", "h": "1ca0cb964949790e86fa0f6e10ea4c655b852e2797ae43d22afe09c3513ad0d1", "on": true}, {"id": "a_tehnician_p_darius", "person": "p_darius", "role": "tehnician", "h": "1ca0cb964949790e86fa0f6e10ea4c655b852e2797ae43d22afe09c3513ad0d1", "on": true}, {"id": "a_tehnician_p_alin", "person": "p_alin", "role": "tehnician", "h": "1ca0cb964949790e86fa0f6e10ea4c655b852e2797ae43d22afe09c3513ad0d1", "on": true}, {"id": "a_tehnician_p_dejan", "person": "p_dejan", "role": "tehnician", "h": "1ca0cb964949790e86fa0f6e10ea4c655b852e2797ae43d22afe09c3513ad0d1", "on": true}, {"id": "a_tehnician_p_axel", "person": "p_axel", "role": "tehnician", "h": "1ca0cb964949790e86fa0f6e10ea4c655b852e2797ae43d22afe09c3513ad0d1", "on": true}, {"id": "a_tehnician_p_tavi", "person": "p_tavi", "role": "tehnician", "h": "1ca0cb964949790e86fa0f6e10ea4c655b852e2797ae43d22afe09c3513ad0d1", "on": true}, {"id": "a_tehnician_p_8", "person": "p_8", "role": "tehnician", "h": "1ca0cb964949790e86fa0f6e10ea4c655b852e2797ae43d22afe09c3513ad0d1", "on": true}, {"id": "a_tehnician_p_9", "person": "p_9", "role": "tehnician", "h": "1ca0cb964949790e86fa0f6e10ea4c655b852e2797ae43d22afe09c3513ad0d1", "on": true}];
 function pwSuggest(person,role){
-  var nm=String(person.name||'').split('(')[0].normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Za-z0-9]/g,'');
-  var pre={sef:'Sef',depozit:'Depozit',resp:'Eveniment',admin:'Admin'}[role];
-  if(role==='tehnician')pre={'Lumini':'TehnicLumini','Sunet':'TehnicSunet','Ecran':'TehnicLED','Scenă':'TehnicScena'}[person.dept]||'Tehnic';
-  return pre+nm;
+  var W=['ancora','arcus','balon','banca','barca','bujor','busola','cactus','calut','camila','castor','cerb','cirese','clopot','cocor','comoara','corabie','crin','delfin','desert','dropie','elan','fazan','ferma','flaut','fluture','foca','fulger','gutuie','harpa','iarba','ied','iepure','izvor','jder','lalea','lebada','leu','liliac','lingura','lup','macara','magnolie','mamut','mandarina','mesteacan','miere','molid','morcov','nisip','nor','nufar','oaza','ocean','orhidee','pana','papagal','pelican','pepene','pinguin','piramida','plop','porumbel','prun','raton','rodie','rubin','safir','salcie','sanie','scorus','smarald','soim','stejar','struguri','tigru','topaz','trandafir','tulpina','uragan','vapor','vultur','zambila','zebra'];
+  var r=new Uint32Array(4);(window.crypto||window.msCrypto).getRandomValues(r);
+  var c=function(w){return w.charAt(0).toUpperCase()+w.slice(1);};
+  return c(W[r[0]%W.length])+'-'+c(W[r[1]%W.length])+'-'+c(W[r[2]%W.length])+'-'+(10+r[3]%90);
+}
+function pwWeak(pw,pid){
+  if(!pw||pw.length<10)return 'Parola trebuie să aibă minim 10 caractere.';
+  var n=function(x){return String(x||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'');};
+  var q=n(pw),p=person(pid)||{},nm=n(String(p.name||'').split('(')[0]);
+  if(nm.length>=3&&q.indexOf(nm)>=0)return 'Parola nu are voie să conțină numele persoanei.';
+  if(/^(sef|depozit|eveniment|admin|tehnic|parola|esd|demo)/.test(q)||/(1234|qwerty|parola|password)/.test(q))return 'Parola e prea ușor de ghicit. Folosește sugestia sau altceva greu de ghicit.';
+  if(/^(.)\1+$/.test(q))return 'Parola e prea ușor de ghicit.';
+  return '';
 }
 var REFS={
  i_mythos:'https://stage-experts.com/cdn/shop/files/mythos-clay-paky_1200x1200.webp?v=1781892598',
@@ -377,10 +391,10 @@ function load(){
   if(!S.v){ /* date salvate de versiuni vechi: se aduc o singură dată la forma curentă */
   S.items.forEach(function(it){if(it.ref===undefined&&REFS[it.id])it.ref=REFS[it.id];});if(!S.zones||!S.shelves){S.zones=cp(ZONES0);S.shelves=cp(SHELVES0);S.items.forEach(function(it){if(!it.loc)return;if(OLDZ[it.loc.z]){it.loc.z=OLDZ[it.loc.z];}if(ZGUESS[it.id]&&!it.loc.z){it.loc.z=ZGUESS[it.id];it.zoneGuess=true;}if(ZGUESS[it.id]&&it.zoneGuess){it.loc.z=ZGUESS[it.id];}});}if(!S.accounts)S.accounts=cp(ACCS0);
   S.persons.forEach(function(p){if(p.id==='p_8'&&/^Persoană 8/.test(p.name)){p.name='Tompa';p.func='Tehnician';p.dept='Scenă';}if(p.id==='p_9'&&/^Persoană 9/.test(p.name)){p.name='Sebi';p.func='Tehnician';p.dept='Scenă';}});
-  S.accounts.forEach(function(a){if(a.id==='a_resp_p_8'&&a.h==='b0d2c971a9c6821f4b2c27a3b4cd1c844203433c094f9b472af71792e30ebfb0')a.h=pwHash('EvenimentTompa');if(a.id==='a_resp_p_9'&&a.h==='651e2c5947f3c8147ca2d1171b217b330bd44df4cba0e5f1d2846a9a80e0ad97')a.h=pwHash('EvenimentSebi');});
+  
   ACCS0.forEach(function(a){if((a.person==='p_8'||a.person==='p_9')&&!S.accounts.some(function(x){return x.id===a.id;}))S.accounts.push(cp(a));});
   STAGE0().forEach(function(it){if(!S.items.some(function(x){return x.id===it.id;}))S.items.push(it);});S.v=SCHEMA;}
-  if(!S.audit)S.audit=[];if(!S.notifs)S.notifs=[];if(!S.seen)S.seen={};if(!S.prefs)S.prefs={};if(!S.settings)S.settings={};if(!S.accounts)S.accounts=cp(ACCS0);if(!S.zones)S.zones=cp(ZONES0);if(!S.shelves)S.shelves=cp(SHELVES0);if(!S.payments)S.payments=[];if(!S.components)S.components=['Montaj','Tehnic','Demontat'];return;}}}catch(e){}
+  if(!S.audit)S.audit=[];if(!S.notifs)S.notifs=[];if(!S.seen)S.seen={};if(!S.prefs)S.prefs={};if(!S.settings)S.settings={};if(!S.accounts)S.accounts=cp(ACCS0);if(!S.zones)S.zones=cp(ZONES0);if(!S.shelves)S.shelves=cp(SHELVES0);if(!S.payments)S.payments=[];if(!S.components)S.components=['Montaj','Tehnic','Demontat'];if(!S.demoPw&&!localStorage.getItem('esd-team-code')){S.accounts.forEach(function(a){a.h=pwHash('demo-'+a.role);});S.demoPw=1;}return;}}}catch(e){}
   S=seed();
 }
 var DEPTH=0,DIRTY=false,LAST=null,T0=0;
@@ -538,7 +552,7 @@ function loginView(){
   '<div class="loginbox"><label>Cine ești?</label><select id="lg-me">'+((CLOUD.linked()&&CLOUD.people())||S.persons).map(function(p){return '<option value="'+p.id+'"'+(p.id===lastMe()?' selected':'')+'>'+esc(p.name)+(p.dept&&p.dept!=='—'?' ('+esc(p.dept)+')':'')+'</option>';}).join('')+'</select>'+
   '<label>Parola</label><input id="lg-pw" type="password" autocomplete="off" autocapitalize="none" onkeydown="if(event.key===\'Enter\')A.login()">'+
   '<button id="lg-go" class="btn primary block" style="margin-top:18px" onclick="A.login()">Intră</button></div>'+
-  '<div class="login-foot"><span class="cst" onclick="A.cloud()" style="cursor:pointer">'+CLOUD.pill()+'</span><br>'+(CLOUD.linked()?'Parola hotărăște rolul · datele sunt comune cu echipa':'Mod demo cu date de exemplu · parola hotărăște rolul')+'<br>Depozit ESD '+VERSION+'</div></div>';
+  '<div class="login-foot"><span class="cst" onclick="A.cloud()" style="cursor:pointer">'+CLOUD.pill()+'</span><br>'+(CLOUD.linked()?'Parola hotărăște rolul · datele sunt comune cu echipa':'Mod demo cu date de exemplu · parola: demo-sef, demo-depozit, demo-resp, demo-tehnician sau demo-admin')+'<br>Depozit ESD '+VERSION+'</div></div>';
 }
 
 /* ---------- inventar ---------- */
@@ -1099,15 +1113,15 @@ var A={
   },
   accSug:function(){var p=person($('ac-p').value);if(p)$('ac-w').value=pwSuggest(p,$('ac-r').value);},
   accSave:function(){if(!isAdmin())return;var pid=$('ac-p').value,role=$('ac-r').value,pw=$('ac-w').value;
-    if(pw.length<6){toast('Parola trebuie să aibă minim 6 caractere.',true);return;}
+    var wk=pwWeak(pw,pid);if(wk){toast(wk,true);return;}
     if(S.accounts.some(function(a){return a.person===pid&&a.role===role;})){toast('Persoana are deja un cont cu acest rol.',true);return;}
     var h=pwHash(pw);if(S.accounts.some(function(a){return a.person===pid&&a.h===h;})){toast('Persoana are deja un cont cu această parolă.',true);return;}
     if(CLOUD.linked()){CLOUD.adminCreate(pid,role,pw).then(function(r){accRes(r,'Cont creat.');});return;}
     S.accounts.push({id:uid('a_'),person:pid,role:role,h:h,on:true});save();closeModal();toast('Cont creat.');render();},
   accPw:function(id){if(!isAdmin())return;var a=S.accounts.filter(function(x){return x.id===id;})[0];if(!a)return;var p=person(a.person)||{name:'',dept:''};
-    openModal('Parolă nouă: '+p.name+' ('+PROFILES[a.role]+')','<label>Parola nouă (minim 6 caractere)</label><input id="ac-w" autocomplete="off" maxlength="40" value="'+esc(pwSuggest(p,a.role))+'"><button class="btn primary block" style="margin-top:12px" onclick="A.accPwSave(\''+id+'\')">Salvează</button>');},
+    openModal('Parolă nouă: '+p.name+' ('+PROFILES[a.role]+')','<label>Parola nouă (minim 10 caractere; folosește sugestia sau ceva greu de ghicit)</label><input id="ac-w" autocomplete="off" maxlength="40" value="'+esc(pwSuggest(p,a.role))+'"><button class="btn primary block" style="margin-top:12px" onclick="A.accPwSave(\''+id+'\')">Salvează</button>');},
   accPwSave:function(id){if(!isAdmin())return;var a=S.accounts.filter(function(x){return x.id===id;})[0];if(!a)return;var pw=$('ac-w').value;
-    if(pw.length<6){toast('Parola trebuie să aibă minim 6 caractere.',true);return;}
+    var wk=pwWeak(pw,a.person);if(wk){toast(wk,true);return;}
     if(CLOUD.linked()){CLOUD.adminPassword(id,pw).then(function(r){accRes(r,'Parola s-a schimbat. Persoana trebuie să intre din nou cu parola nouă.');});return;}
     var h=pwHash(pw);if(S.accounts.some(function(x){return x.id!==id&&x.person===a.person&&x.h===h;})){toast('Persoana are deja o altă parolă identică la alt rol.',true);return;}
     a.h=h;save();closeModal();toast('Parola s-a schimbat.');render();},
@@ -1269,7 +1283,7 @@ var CLOUD=(function(){
   var SERVER_ONLY={accounts:1},INSERT_ONLY={audit:1,notifs:1};
   var ARR=['items','events','rentals','clients','persons','payments','shelves','zones','accounts','audit','notifs'];
   var COLS={items:1,events:1,rentals:1,clients:1,persons:1,payments:1,shelves:1,zones:1,accounts:1,audit:1,notifs:1,seen:1,prefs:1,meta:1};
-  var T=window.__ESD_TEST||null;
+  var T=(window.__ESD_DEV?window.__ESD_TEST:null)||null;
   var sb=null,ch=null,ready=false,busy=false,again=false,started=false,connecting=false,reconciling=false;
   var pushT=null,renderT=null,retryT=null,SYNCED={},lastPull='',status='local',lastErr='',actor=null,authHooked=false,KEEP=null;
 
@@ -1618,8 +1632,14 @@ var CLOUD=(function(){
   }
 
   /* ---- intrarea cu parola: serverul găsește contul după parolă ---- */
-  async function offVerify(pid,pw){var o=lsj(OFFK)||{},h=pwHash('OFF|'+pid+'|'+pw);return (o[pid]||[]).filter(function(x){return x.h===h;})[0]||null;}
-  function offSave(pid,pw,role,acc){var o=lsj(OFFK)||{},h=pwHash('OFF|'+pid+'|'+pw);o[pid]=(o[pid]||[]).filter(function(x){return x.acc!==acc;});o[pid].push({h:h,role:role,acc:acc});lss(OFFK,o);}
+  async function offKdf(pid,pw,salt){try{if(!(window.crypto&&crypto.subtle))return null;var e=new TextEncoder(),k=await crypto.subtle.importKey('raw',e.encode('OFF|'+pid+'|'+pw),'PBKDF2',false,['deriveBits']);var b=await crypto.subtle.deriveBits({name:'PBKDF2',hash:'SHA-256',salt:e.encode(salt),iterations:150000},k,256);return Array.prototype.map.call(new Uint8Array(b),function(x){return ('0'+x.toString(16)).slice(-2);}).join('');}catch(e){return null;}}
+  async function offVerify(pid,pw){var o=lsj(OFFK)||{},L=o[pid]||[];for(var i=0;i<L.length;i++){var x=L[i];
+    if(x.s){var d=await offKdf(pid,pw,x.s);if(d&&d===x.k)return x;}
+    else if(x.h&&x.h===pwHash('OFF|'+pid+'|'+pw)){offSave(pid,pw,x.role,x.acc);return x;}}
+    return null;}
+  async function offSave(pid,pw,role,acc){var r=new Uint8Array(16);crypto.getRandomValues(r);var salt=Array.prototype.map.call(r,function(x){return ('0'+x.toString(16)).slice(-2);}).join('');
+    var k=await offKdf(pid,pw,salt),e=k?{s:salt,k:k,role:role,acc:acc}:{h:pwHash('OFF|'+pid+'|'+pw),role:role,acc:acc};
+    var o=lsj(OFFK)||{};o[pid]=(o[pid]||[]).filter(function(x){return x.acc!==acc;});o[pid].push(e);lss(OFFK,o);}
   async function offlineLogin(pid,pw){
     var v=await offVerify(pid,pw);
     if(!v)return {ok:false,why:'net'};
@@ -1682,7 +1702,7 @@ var CLOUD=(function(){
     get status(){return status;},get ready(){return ready;},get synced(){return SYNCED;},canon:canon,hs:hs};
 })();
 load();LAST=snap();render();try{CLOUD.start();}catch(e){}
-window.__esd={cloud:CLOUD,save:function(){save();},shortages:shortages,reload:function(){load();LAST=snap();render();},get state(){return S;},avail:avail,seed:seed,UI:UI,as:function(pid,role){UI.me=pid;UI.profile=role;UI.tab='inv';UI.more='';LAST=snap();render();},sha:sha256,blockers:blockers};
+if(!window.__ESD_DEV){window.__esd={UI:{get profile(){return UI.profile;}}};}else window.__esd={cloud:CLOUD,save:function(){save();},shortages:shortages,reload:function(){load();LAST=snap();render();},get state(){return S;},avail:avail,seed:seed,UI:UI,as:function(pid,role){UI.me=pid;UI.profile=role;UI.tab='inv';UI.more='';LAST=snap();render();},sha:sha256,blockers:blockers};
 })();
 </script>
 <script>
