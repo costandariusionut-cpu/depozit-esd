@@ -225,7 +225,7 @@ function accRes(r,okMsg){
 }
 function deny(){toast('Nu ai drept pentru această acțiune.',true);}
 function toast(m,bad){var t=document.createElement('div');t.textContent=m;if(bad)t.className='bad';$('toast').appendChild(t);setTimeout(function(){t.remove();},bad?4200:2400);}
-var VERSION='v0.13.0',SCHEMA=9;
+var VERSION='v0.14.0',SCHEMA=9;
 var ZONES0=[
  {id:'c1',name:'Camera 1',desc:'Ultima din video, după ușă: frigider, rafturi și multe flightcase-uri diferite.',x:10,y:10,w:320,h:170},
  {id:'c2',name:'Camera 2',desc:'A doua din video: sunet, rafturi și un birou.',x:10,y:190,w:320,h:150},
@@ -569,7 +569,7 @@ function render(){
   if(!UI.profile){app.innerHTML=loginView();return;}
   var cnt=myNotifs().filter(function(n){return n.at>(S.seen[P()+UI.me]||0);}).length;
   var h='<header class="top"><img class="hlogo" alt="ESD" src="'+LOGOS+'" onclick="A.go(homeTab())"><div class="who" style="display:flex;gap:8px;align-items:center">'+avatar(person(UI.me),'sm2')+'<div><b>'+esc(pname(UI.me))+' <span class="cstd" onclick="A.cloud()">'+CLOUD.dot()+'</span></b><span>'+esc(PROFILES[P()])+'</span></div></div>'+
-    '<button onclick="A.go(\'more\',\'notif\')" aria-label="Notificări">🔔'+(cnt?' '+cnt:'')+'</button><button onclick="A.logout()">Schimbă</button></header><main><div id="cstb">'+CLOUD.banner()+'</div>';
+    '<button onclick="A.go(\'more\',\'notif\')" aria-label="Notificări">🔔'+(cnt?' '+cnt:'')+'</button>'+(canSwitch()?'<button onclick="A.logout()">Schimbă</button>':'')+'</header><main><div id="cstb">'+CLOUD.banner()+'</div>';
   var body='';
   if(UI.tab==='azi'&&!isSef())UI.tab='inv';
   if(UI.tab==='azi')body=todayView();
@@ -581,6 +581,22 @@ function render(){
   var tabs=(isSef()?[['azi','☀️','Azi']]:[]).concat([['inv','📦','Inventar'],['cal','📅','Calendar'],['ev','🎤','Evenimente'],['rent','🧾','Rent'],['more','☰','Mai mult']]);
   var nav='<nav class="bottom"><div class="inner">'+tabs.map(function(t){return '<button class="'+(UI.tab===t[0]?'on':'')+'" onclick="A.go(\''+t[0]+'\')"><i>'+t[1]+'</i>'+t[2]+'</button>';}).join('')+'</div></nav>';
   app.innerHTML=h+body+'</main>'+nav;
+}
+var KEEPK='esd-keep-v1';
+function keepSet(pid,role){try{var a=S.accounts.filter(function(x){return x.person===pid&&x.role===role;})[0];localStorage.setItem(KEEPK,JSON.stringify({pid:pid,role:role,h:a&&a.h||''}));}catch(e){}}
+function keepClear(){try{localStorage.removeItem(KEEPK);}catch(e){}}
+function keepGet(){try{return JSON.parse(localStorage.getItem(KEEPK)||'null');}catch(e){return null;}}
+function canSwitch(){return !!UI.me&&(S.accounts||[]).some(function(a){return a.person===UI.me&&a.role==='admin'&&a.on!==false;});}
+/* rămâi conectat pe acest dispozitiv până la delogare sau până se schimbă parola */
+function restoreLogin(){
+  var k=keepGet();if(!k||!k.pid||!k.role||UI.profile)return false;
+  var linked=false;try{linked=!!localStorage.getItem('esd-team-code');}catch(e){}
+  if(linked){var se=null;try{se=JSON.parse(localStorage.getItem('esd-sess-v1')||'null');}catch(e){}
+    if(!se||se.person!==k.pid||se.role!==k.role){keepClear();return false;}}
+  else{var a=(S.accounts||[]).filter(function(x){return x.person===k.pid&&x.role===k.role&&x.on!==false;})[0];
+    if(!a||!a.h||a.h!==k.h){keepClear();return false;}}
+  if(!person(k.pid)){keepClear();return false;}
+  UI.me=k.pid;UI.profile=k.role;UI.tab=k.role==='sef'?'azi':'inv';UI.more='';return true;
 }
 function lastMe(){try{return localStorage.getItem('esd-last-me')||'';}catch(e){return '';}}
 function loginView(){
@@ -820,7 +836,8 @@ function rfLines(){
 }
 
 /* ---------- mai mult ---------- */
-function moreView(){
+function moreView(){var h0=moreView0();return UI.more?h0:h0+'<div class="menu" style="margin-top:14px"><button onclick="A.signout()" style="color:var(--bad)"><i>🚪</i>Delogare</button><div class="mut sm" style="text-align:center">Conectat ca '+esc(pname(UI.me))+' · '+esc(PROFILES[P()]||'')+'</div></div>';}
+function moreView0(){
   var m=UI.more;
   if(m==='map')return mapView();
   if(m==='me')return meView();
@@ -1037,7 +1054,7 @@ var A={
       var bt=$('lg-go');if(bt){if(bt.disabled)return;bt.disabled=true;bt.textContent='Se verifică…';}
       CLOUD.login(pid,pw).then(function(r){
         var b2=$('lg-go');if(b2){b2.disabled=false;b2.textContent='Intră';}
-        if(r&&r.ok){UI.me=pid;UI.profile=r.role;UI.tab=r.role==='sef'?'azi':'inv';UI.more='';UI.fails=0;LAST=snap();try{localStorage.setItem('esd-last-me',pid);}catch(e){}render();if(r.offline)toast('Ai intrat fără internet.');return;}
+        if(r&&r.ok){UI.me=pid;UI.profile=r.role;UI.tab=r.role==='sef'?'azi':'inv';UI.more='';UI.fails=0;LAST=snap();try{localStorage.setItem('esd-last-me',pid);}catch(e){}if(!r.offline)keepSet(pid,r.role);else keepClear();render();if(r.offline)toast('Ai intrat fără internet.');return;}
         var w=r&&r.why;
         if(w==='locked'){toast('Prea multe încercări greșite. Mai așteaptă 5 minute.',true);}
         else if(w==='net'){toast('Fără internet: pe acest telefon nu ai mai intrat cu această parolă, deci nu o pot verifica acum.',true);}
@@ -1049,9 +1066,10 @@ var A={
     }
     var a=S.accounts.filter(function(x){return x.person===pid&&x.on!==false&&x.h===h;})[0];
     if(!pw||!a){UI.fails++;if(UI.fails>=5){UI.lock=now+30000;UI.fails=0;}toast('Nume sau parolă greșită.',true);$('lg-pw').value='';return;}
-    UI.me=pid;UI.profile=a.role;UI.tab=a.role==='sef'?'azi':'inv';UI.more='';UI.fails=0;LAST=snap();try{localStorage.setItem('esd-last-me',pid);}catch(e){}render();
+    UI.me=pid;UI.profile=a.role;UI.tab=a.role==='sef'?'azi':'inv';UI.more='';UI.fails=0;LAST=snap();try{localStorage.setItem('esd-last-me',pid);}catch(e){}keepSet(pid,a.role);render();
   },
-  logout:function(){UI.profile=null;UI.me=null;closeModal();render();},
+  logout:function(){if(UI.me&&!canSwitch())return;keepClear();UI.profile=null;UI.me=null;closeModal();render();},
+  signout:function(){if(!UI.me)return;confirmBox('Te deloghezi de pe acest telefon? Data viitoare intri din nou cu parola.',function(){keepClear();var p=CLOUD.signout?CLOUD.signout():null;UI.profile=null;UI.me=null;UI.tab='';closeModal();render();toast('Te-ai delogat.');},'Deloghează-mă');},
   reset:function(){if(!isAdmin()){toast('Doar administratorul poate reseta.',true);return;}if(CLOUD.linked()){toast('Resetarea e oprită cât timp dispozitivul e conectat la datele comune.',true);return;}confirmBox('Revii la datele de exemplu? Toate modificările tale dispar (conturile rămân).',function(){var ac=S.accounts;S=seed();S.accounts=ac;LAST=null;save();R=null;toast('Datele de exemplu au fost readuse.');render();},'Resetează');},
   setQ:function(v){UI.q=v;$('invlist').innerHTML=invList();},
   setDept:function(v){UI.dept=v;render();},
@@ -1814,7 +1832,7 @@ Object.keys(A2).forEach(function(k){A[k]=A2[k];});
 window.A=A;
 document.addEventListener('keydown',function(e){if(e.key==='Escape')closeModal();});
 $('modal').addEventListener('click',function(e){if(e.target===$('modal'))closeModal();});
-(function(){var SKIP=['login','logout','go','close','setQ','setDept','setInvDate','mapQ','mapHi','zoneView','elView','imgErr','chkSet','accSug','efSet','efRefresh','cloud','setInvState','aziBad','tkSub','tkFilt','tkView','tkForm','tkPostpone','tnKind','mtForm','mtView','ndForm','ndKind','ndDone','vanEdit','lbPrint','printClose','lbScanLink','scanFind','openCode','scanClose','scanManual','ldOpen','ldDir','ldVan','ldScan','logiSet','efVan'];
+(function(){var SKIP=['login','logout','signout','go','close','setQ','setDept','setInvDate','mapQ','mapHi','zoneView','elView','imgErr','chkSet','accSug','efSet','efRefresh','cloud','setInvState','aziBad','tkSub','tkFilt','tkView','tkForm','tkPostpone','tnKind','mtForm','mtView','ndForm','ndKind','ndDone','vanEdit','lbPrint','printClose','lbScanLink','scanFind','openCode','scanClose','scanManual','ldOpen','ldDir','ldVan','ldScan','logiSet','efVan'];
   Object.keys(A).forEach(function(k){var f=A[k];if(typeof f!=='function'||SKIP.indexOf(k)>=0)return;A[k]=function(){var top=DEPTH===0;if(top)T0=Date.now();DEPTH++;try{return f.apply(this,arguments);}finally{DEPTH--;if(top&&DIRTY)auditNow();}};});})();
 /* ===== Sincronizare online live (Supabase) – conturi verificate de server (v0.10) ===== */
 var CLOUD=(function(){
@@ -2110,11 +2128,26 @@ var CLOUD=(function(){
     if(!authHooked&&sb.auth.onAuthStateChange){authHooked=true;
       sb.auth.onAuthStateChange(function(ev){
         if(ev!=='SIGNED_OUT')return;
-        ready=false;try{if(ch)sb.removeChannel(ch);}catch(e){}ch=null;lss(SESSK,null);setStatus('login');
+        ready=false;try{if(ch)sb.removeChannel(ch);}catch(e){}ch=null;lss(SESSK,null);setStatus('login');if(quiet){quiet=false;return;}keepClear();
         if(UI.me){try{toast('Sesiunea s-a încheiat (parolă schimbată sau cont oprit). Intră din nou.',true);}catch(e){}UI.me=null;UI.profile=null;try{closeModal();render();}catch(e){}}
       });
     }
     return sb;
+  }
+  var quiet=false;
+  async function signout(){
+    try{if(ready)await push();}catch(e){}
+    ready=false;try{if(ch&&sb)sb.removeChannel(ch);}catch(e){}ch=null;lss(SESSK,null);actor=null;setStatus('login');
+    quiet=true;try{if(sb)await sb.auth.signOut({scope:'local'});}catch(e){}quiet=false;
+  }
+  /* sesiunea e verificată la server: dacă parola a fost schimbată sau contul oprit, serverul a închis-o */
+  var lastVerify=0;
+  async function verify(force){
+    if(!sb||!sess()||!sb.auth.getUser)return;var n=Date.now();if(!force&&n-lastVerify<300000)return;lastVerify=n;
+    try{var u=await sb.auth.getUser();var er=u&&u.error;
+      if(er&&(er.status===401||er.status===403||/session|jwt|not.?found|invalid/i.test(er.message||''))){lss(SESSK,null);await sb.auth.signOut({scope:'local'});
+        ready=false;setStatus('login');keepClear();if(UI.me){toast('Sesiunea s-a încheiat (parolă schimbată sau cont oprit). Intră din nou.',true);UI.me=null;UI.profile=null;try{closeModal();render();}catch(e){}}}
+    }catch(e){}
   }
   async function refreshPeople(code){
     var r=await sb.rpc('esd_people',{p_code:code});
@@ -2137,8 +2170,8 @@ var CLOUD=(function(){
       if(ls(CODEK)!==code){try{localStorage.setItem(CODEK,code);}catch(e){}lss(SYNCK,null);lss(PULLK,null);S.linked=false;saveLocal();}
       connecting=false;lastErr='';hideBox();
       var g=await sb.auth.getSession(),se=sess();
-      if(g&&g.data&&g.data.session&&se&&se.uid===g.data.session.user.id)await startSync(false);
-      else{ready=false;setStatus('login');}
+      if(g&&g.data&&g.data.session&&se&&se.uid===g.data.session.user.id){await verify(true);if(sess())await startSync(false);}
+      else{ready=false;setStatus('login');if(UI.me&&keepGet()){keepClear();UI.me=null;UI.profile=null;try{toast('Sesiunea a expirat. Intră din nou.',true);}catch(e){}}}
       if(!UI.me){try{render();}catch(e){}}
       return true;
     }catch(e){
@@ -2241,9 +2274,9 @@ var CLOUD=(function(){
     window.addEventListener('online',function(){var c=ls(CODEK);if(c&&!ready&&status!=='login')connect(c);else reconcile();});
     document.addEventListener('visibilitychange',function(){if(!document.hidden){var c=ls(CODEK);if(c&&!ready&&status!=='login')connect(c);else reconcile();}});
     /* plasă de siguranță: chiar dacă legătura live cade, datele se aliniază la fiecare 25 de secunde */
-    setInterval(function(){if(!document.hidden)reconcile();},T?T.poll||600000:25000);
+    setInterval(function(){if(!document.hidden){reconcile();verify(false);}},T?T.poll||600000:25000);
   }
-  return {start:start,queue:queue,push:push,pull:pull,reconcile:reconcile,connect:connect,login:login,people:people,open:function(){showGate('');},pill:pill,dot:dot,banner:banner,linked:linked,validRow:validRow,applyRow:applyRow,
+  return {start:start,signout:signout,verify:verify,queue:queue,push:push,pull:pull,reconcile:reconcile,connect:connect,login:login,people:people,open:function(){showGate('');},pill:pill,dot:dot,banner:banner,linked:linked,validRow:validRow,applyRow:applyRow,
     adminCreate:function(pid,role,pw){return admin('esd_admin_create',{p_person:pid,p_role:role,p_secret:secret(pw)});},
     adminPassword:function(acc,pw){return admin('esd_admin_password',{p_account:acc,p_secret:secret(pw)});},
     adminEnable:function(acc,on){return admin('esd_admin_enable',{p_account:acc,p_on:on});},
@@ -2251,11 +2284,11 @@ var CLOUD=(function(){
     get session(){return sess();},
     get status(){return status;},get ready(){return ready;},get synced(){return SYNCED;},canon:canon,hs:hs};
 })();
-load();LAST=snap();render();try{CLOUD.start();}catch(e){}
+load();LAST=snap();try{restoreLogin();}catch(e){}render();try{CLOUD.start();}catch(e){}
 (function(){function chk(){var c=codeOf(location.hash);if(!c)return;try{history.replaceState(null,'',location.pathname+location.search);}catch(e){}if(UI.profile)A.openCode(c);else{UI.pendingCode=c;toast('Intră în aplicație și se deschide eticheta '+c+'.');}}
   window.addEventListener('hashchange',chk);chk();
   var r0=render;render=function(){r0();if(UI.profile&&UI.pendingCode){var c=UI.pendingCode;UI.pendingCode='';setTimeout(function(){A.openCode(c);},0);}};})();
-if(!window.__ESD_DEV){window.__esd={UI:{get profile(){return UI.profile;}}};}else window.__esd={cloud:CLOUD,myNotifs:function(){return myNotifs();},codeOf:codeOf,QR:QR,save:function(){save();},shortages:shortages,reload:function(){load();LAST=snap();render();},get state(){return S;},avail:avail,seed:seed,UI:UI,as:function(pid,role){UI.me=pid;UI.profile=role;UI.tab='inv';UI.more='';LAST=snap();render();},sha:sha256,blockers:blockers};
+if(!window.__ESD_DEV){window.__esd={UI:{get profile(){return UI.profile;}}};}else window.__esd={toLogin:function(){keepClear();UI.profile=null;UI.me=null;closeModal();render();},keepGet:function(){return keepGet();},restore:function(){return restoreLogin();},cloud:CLOUD,myNotifs:function(){return myNotifs();},codeOf:codeOf,QR:QR,save:function(){save();},shortages:shortages,reload:function(){load();LAST=snap();render();},get state(){return S;},avail:avail,seed:seed,UI:UI,as:function(pid,role){UI.me=pid;UI.profile=role;UI.tab='inv';UI.more='';LAST=snap();render();},sha:sha256,blockers:blockers};
 })();
 </script>
 <script>
