@@ -225,7 +225,7 @@ function accRes(r,okMsg){
 }
 function deny(){toast('Nu ai drept pentru această acțiune.',true);}
 function toast(m,bad){var t=document.createElement('div');t.textContent=m;if(bad)t.className='bad';$('toast').appendChild(t);setTimeout(function(){t.remove();},bad?4200:2400);}
-var VERSION='v0.17.0',SCHEMA=9;
+var VERSION='v0.18.0',SCHEMA=9;
 var ZONES0=[
  {id:'c1',name:'Camera 1',desc:'Ultima din video, după ușă: frigider, rafturi și multe flightcase-uri diferite.',x:10,y:10,w:320,h:170},
  {id:'c2',name:'Camera 2',desc:'A doua din video: sunet, rafturi și un birou.',x:10,y:190,w:320,h:150},
@@ -320,7 +320,11 @@ function pickImage(cam,cb){var inp=document.createElement('input');inp.type='fil
   inp.onchange=function(){var f=inp.files[0];if(!f)return;if(!/^image\//.test(f.type)){toast('Alege o imagine.',true);return;}
     var rd=new FileReader();rd.onload=function(){var im=new Image();im.onload=function(){var s=Math.min(1,320/Math.max(im.width,im.height));var c=document.createElement('canvas');c.width=Math.round(im.width*s);c.height=Math.round(im.height*s);c.getContext('2d').drawImage(im,0,0,c.width,c.height);cb(c.toDataURL('image/jpeg',.72));};im.onerror=function(){toast('Imaginea nu poate fi citită.',true);};im.src=rd.result;};rd.readAsDataURL(f);};
   inp.click();}
-function ifPhBox(it){var src=UI.ifPh||(it&&it.photo)||'';return src?'<img src="'+esc(src)+'" alt="" style="width:84px;height:84px;object-fit:cover;border-radius:12px;display:block">':'<div style="width:84px;height:84px;border-radius:12px;border:1px dashed var(--line);display:flex;align-items:center;justify-content:center;font-size:28px">📷</div>';}
+function photosOf(it){if(!it)return [];if(Array.isArray(it.photos)&&it.photos.length)return it.photos.slice();return it.photo?[it.photo]:[];}
+function setPhotos(it,arr){arr=(arr||[]).filter(function(p){return !!p;}).slice(0,12);it.photos=arr;it.photo=arr[0]||'';}
+function galleryHtml(it){var P=photosOf(it);if(!P.length)return '';
+  return '<div style="display:flex;gap:8px;overflow-x:auto;padding:8px 0 4px">'+P.map(function(p,i){return '<img src="'+esc(p)+'" alt="" onclick="A.phView(\''+it.id+'\','+i+')" style="width:72px;height:72px;flex:none;object-fit:cover;border-radius:10px;cursor:pointer;'+(i===0?'outline:2px solid var(--acc);':'')+'">';}).join('')+'</div><div class="mut sm">'+P.length+(P.length===1?' poză':' poze')+' · atinge una ca s-o vezi mare</div>';}
+function ifPhBox(it){var src=UI.ifPh||(it&&photosOf(it)[0])||'';return src?'<img src="'+esc(src)+'" alt="" style="width:84px;height:84px;object-fit:cover;border-radius:12px;display:block">':'<div style="width:84px;height:84px;border-radius:12px;border:1px dashed var(--line);display:flex;align-items:center;justify-content:center;font-size:28px">📷</div>';}
 function pimg(it,style,cls){var own=!!it.photo,fold=!own&&LOCALPICS;var src=own?it.photo:fold?'poze/'+slug(it.name)+'.'+EXTS[0]:(it.ref||ph(it.name,it.dept,it.cat));return '<img class="'+cls+'"'+(style?' style="'+style+'"':'')+' src="'+esc(src)+'" data-t="'+(fold?0:-1)+'" data-s="'+esc(slug(it.name))+'" data-n="'+esc(it.name)+'" data-d="'+esc(it.dept)+'" data-c="'+esc(it.cat)+'" data-r="'+esc(it.ref||'')+'" onerror="A.imgErr(this)" alt="">';}
 var ICONS={
  moving:'<path d="M30 90V50Q30 40 40 40H80Q90 40 90 50V90" fill="none"/><rect x="44" y="38" width="32" height="46" rx="9" fill="rgba(255,255,255,.28)"/><circle cx="60" cy="62" r="9" fill="none"/><rect x="38" y="92" width="44" height="9" rx="3" fill="rgba(255,255,255,.28)"/>',
@@ -647,6 +651,7 @@ function invList(){
 function itemDetail(id){
   var it=item(id);if(!it)return;
   var d=UI.invDate||today();var h='<div class="row top">'+pimg(it,'width:90px;height:90px','thumb')+'<div class="grow"><b style="font-size:1.1875rem">'+esc(it.name)+'</b><div class="mut">'+esc(it.dept)+' · '+esc(it.cat)+'</div>'+(isSef()?'<div class="mut">Preț rent: '+money(it.price)+' / zi</div>':'')+'</div></div>';
+  h+=galleryHtml(it);
   if(LOCALPICS)h+='<div class="mut sm" style="margin-top:8px">Poză din folder: <b>poze/'+esc(slug(it.name))+'.jpg</b></div>';
   if(it.ref&&!it.photo)h+='<div class="mut sm">Poză de referință de pe internet (model apropiat). O înlocuiești cu a ta '+(LOCALPICS?'din folderul poze/ sau ':'')+'cu butoanele de mai jos.</div>';
   if(it.nota)h+='<div class="banner warn" style="margin-top:10px">'+esc(it.nota)+'</div>';
@@ -658,7 +663,7 @@ function itemDetail(id){
   h+='<h3>Când nu este disponibil</h3>'+blockersHtml(it,today(),'9999-12-31');
   h+='<h3>Jurnal mentenanță</h3>'+(it.log.length?it.log.slice().reverse().map(function(l){return '<div class="card sm"><b>'+esc(l.type)+'</b> · '+fmt(l.date)+' · '+esc(l.who)+'<br>'+esc(l.text)+'</div>';}).join(''):'<div class="mut">Fără intrări.</div>');
   h+='<div class="row" style="margin-top:14px;flex-wrap:wrap">'+(canState(it)?'<button class="btn" onclick="A.stateForm(\''+id+'\')">Defect / mentenanță</button>':'')+'';
-  if(canItems())h+='<button class="btn" onclick="A.photoPick(\''+id+'\',true)">📷 Fă poză</button><button class="btn" onclick="A.photoPick(\''+id+'\')">🖼️ Din galerie</button><button class="btn" onclick="A.photoUrl(\''+id+'\')">🔗 Din link</button>'+(it.photo?'<button class="btn" onclick="A.photoDel(\''+id+'\')">Elimină poza</button>':'')+'<button class="btn" onclick="A.itemForm(\''+id+'\')">Editează</button><button class="btn danger" onclick="A.itemDel(\''+id+'\')">Șterge</button>';
+  if(canItems())h+='<button class="btn" onclick="A.photoPick(\''+id+'\',true)">📷 Adaugă poză</button><button class="btn" onclick="A.photoPick(\''+id+'\')">🖼️ Din galerie</button><button class="btn" onclick="A.photoUrl(\''+id+'\')">🔗 Din link</button>'+'<button class="btn" onclick="A.itemForm(\''+id+'\')">Editează</button><button class="btn danger" onclick="A.itemDel(\''+id+'\')">Șterge</button>';
   h+='</div>';
   openModal('Articol',h);
 }
@@ -1129,7 +1134,7 @@ var A={
       it.total=t2;
     }
     it.name=name;it.cat=cat;it.dept=$('if-dept').value;it.price=price;it.nota=$('if-nota').value.trim();it.zoneGuess=false;var oz=it.loc&&it.loc.z,oe=it.loc&&it.loc.e;it.loc={z:$('if-z').value.trim(),r:$('if-r').value.trim(),n:$('if-n').value.trim(),e:(oz===$('if-z').value.trim()?(oe||''):'')};
-    if(UI.ifPh){it.photo=UI.ifPh;UI.ifPh=null;}
+    if(UI.ifPh){var P0=photosOf(it);if(P0.length<12)setPhotos(it,P0.concat([UI.ifPh]));UI.ifPh=null;}
     save();closeModal();toast('Articol salvat.');render();
   },
   itemDel:function(id){
@@ -1143,15 +1148,23 @@ var A={
     inp.onchange=function(){var f=inp.files[0];if(!f)return;
       if(!/^image\//.test(f.type)){toast('Alege o imagine.',true);return;}
       var rd=new FileReader();rd.onload=function(){var im=new Image();im.onload=function(){var s=Math.min(1,240/Math.max(im.width,im.height));var c=document.createElement('canvas');c.width=Math.round(im.width*s);c.height=Math.round(im.height*s);c.getContext('2d').drawImage(im,0,0,c.width,c.height);
-        var it=item(id);if(!it)return;var old=it.photo;it.photo=c.toDataURL('image/jpeg',.72);
-        try{localStorage.setItem(KEY,JSON.stringify(S));if(CLOUD)CLOUD.queue();toast('Poză schimbată.');}catch(e){it.photo=old;toast('Poza nu s-a putut salva: memoria browserului e plină.',true);}
+        var it=item(id);if(!it)return;var oldP=photosOf(it),oldF=it.photo;if(oldP.length>=12){toast('Maxim 12 poze pe articol.',true);return;}setPhotos(it,oldP.concat([c.toDataURL('image/jpeg',.72)]));
+        try{localStorage.setItem(KEY,JSON.stringify(S));if(CLOUD)CLOUD.queue();toast('Poză adăugată.');}catch(e){it.photos=oldP;it.photo=oldF;toast('Poza nu s-a putut salva: memoria browserului e plină.',true);}
         closeModal();render();};im.onerror=function(){toast('Imaginea nu poate fi citită.',true);};im.src=rd.result;};rd.readAsDataURL(f);};
     inp.click();
   },
   imgErr:function(el){var t=parseInt(el.getAttribute('data-t'),10);if(t>=0&&t<EXTS.length-1){t++;el.setAttribute('data-t',t);el.src='poze/'+el.getAttribute('data-s')+'.'+EXTS[t];return;}var r=el.getAttribute('data-r');if(t>=0&&r&&el.getAttribute('data-rt')!=='1'){el.setAttribute('data-rt','1');el.src=r;return;}el.onerror=null;el.src=ph(el.getAttribute('data-n'),el.getAttribute('data-d'),el.getAttribute('data-c'));},
   photoUrl:function(id){if(!canItems()){deny();return;}var it=item(id);if(!it)return;openModal('Poză din link','<div class="mut sm">Pe site-ul producătorului: click dreapta pe poză → „Copiază adresa imaginii”, apoi lipește mai jos. Merge doar când ai internet; dacă linkul nu mai funcționează, apare imaginea generică.</div><label>Adresa imaginii (https://…)</label><input id="pu-u" inputmode="url" maxlength="600" placeholder="https://…" value="'+esc(/^https?:/.test(it.photo||"")?it.photo:"")+'"><button class="btn primary block" style="margin-top:12px" onclick="A.photoUrlSave(\''+id+'\')">Salvează</button>');},
-  photoUrlSave:function(id){if(!canItems()){deny();return;}var it=item(id);if(!it)return;var u=$('pu-u').value.trim();if(!/^https:\/\/[^\s"'<>]+$/.test(u)){toast('Adresa trebuie să înceapă cu https:// și să nu conțină spații.',true);return;}it.photo=u;save();closeModal();toast('Poză setată din link.');render();},
-  photoDel:function(id){if(!canItems()){deny();return;}if(!item(id))return;confirmBox('Elimini poza? Revine imaginea generică.',function(){var it=item(id);if(!it)return;it.photo='';save();toast('Poză eliminată.');render();},'Elimină');},
+  photoUrlSave:function(id){if(!canItems()){deny();return;}var it=item(id);if(!it)return;var u=$('pu-u').value.trim();if(!/^https:\/\/[^\s"'<>]+$/.test(u)){toast('Adresa trebuie să înceapă cu https:// și să nu conțină spații.',true);return;}var P=photosOf(it);if(P.length>=12){toast('Maxim 12 poze pe articol.',true);return;}setPhotos(it,P.concat([u]));save();closeModal();toast('Poză adăugată din link.');render();},
+  photoDel:function(id){if(!canItems()){deny();return;}if(!item(id))return;confirmBox('Elimini toate pozele articolului?',function(){var it=item(id);if(!it)return;setPhotos(it,[]);save();toast('Poze eliminate.');render();},'Elimină');},
+  phView:function(id,i){var it=item(id);if(!it)return;var P=photosOf(it);if(!P.length)return;i=((i%P.length)+P.length)%P.length;
+    var h='<img src="'+esc(P[i])+'" alt="" style="width:100%;max-height:62vh;object-fit:contain;border-radius:12px;background:#000;display:block">'+
+    '<div class="row" style="align-items:center;margin-top:10px"><button class="btn" onclick="A.phView(\''+id+'\','+(i-1)+')" '+(P.length<2?'disabled':'')+'>‹</button><div class="grow" style="text-align:center">'+(i+1)+' / '+P.length+(i===0?' · principală':'')+'</div><button class="btn" onclick="A.phView(\''+id+'\','+(i+1)+')" '+(P.length<2?'disabled':'')+'>›</button></div>'+
+    (canItems()?'<div class="row" style="gap:8px;margin-top:10px;flex-wrap:wrap">'+(i>0?'<button class="btn small" onclick="A.phMain(\''+id+'\','+i+')">⭐ Fă-o principală</button>':'')+'<button class="btn small danger" onclick="A.phDel(\''+id+'\','+i+')">Șterge poza</button></div>':'')+
+    '<button class="btn block" style="margin-top:10px" onclick="A.itemView(\''+id+'\')">‹ Înapoi la articol</button>';
+    openModal(esc(it.name),h);},
+  phMain:function(id,i){if(!canItems()){deny();return;}var it=item(id);if(!it)return;var P=photosOf(it);if(!P[i])return;var p=P.splice(i,1)[0];P.unshift(p);setPhotos(it,P);save();toast('Poză principală schimbată.');A.phView(id,0);render();},
+  phDel:function(id,i){if(!canItems()){deny();return;}var it=item(id);if(!it)return;confirmBox('Ștergi această poză?',function(){var P=photosOf(it);P.splice(i,1);setPhotos(it,P);save();toast('Poză ștearsă.');render();if(P.length)A.phView(id,Math.min(i,P.length-1));else A.itemView(id);},'Șterge');},
   stateForm:function(id){
     var it=item(id);
     var h='<label>Ce s-a întâmplat?</label><select id="st-a"><option value="def">Raportez defect</option><option value="men">Trimit la mentenanță</option><option value="ok">Readuc în stoc (reparat / revenit)</option></select>'+
@@ -1923,7 +1936,7 @@ Object.keys(A2).forEach(function(k){A[k]=A2[k];});
 window.A=A;
 document.addEventListener('keydown',function(e){if(e.key==='Escape')closeModal();});
 $('modal').addEventListener('click',function(e){if(e.target===$('modal'))closeModal();});
-(function(){var SKIP=['login','logout','signout','mode','tcSug','tcSave','ifPhoto','pushOn','pushOff','go','close','setQ','setDept','setInvDate','mapQ','mapHi','zoneView','elView','imgErr','chkSet','accSug','efSet','efRefresh','cloud','setInvState','aziBad','tkSub','tkFilt','tkView','tkForm','tkPostpone','tnKind','mtForm','mtView','ndForm','ndKind','ndDone','vanEdit','lbPrint','printClose','lbScanLink','scanFind','openCode','scanClose','scanManual','ldOpen','ldDir','ldVan','ldScan','logiSet','efVan'];
+(function(){var SKIP=['login','logout','signout','mode','tcSug','tcSave','ifPhoto','phView','pushOn','pushOff','go','close','setQ','setDept','setInvDate','mapQ','mapHi','zoneView','elView','imgErr','chkSet','accSug','efSet','efRefresh','cloud','setInvState','aziBad','tkSub','tkFilt','tkView','tkForm','tkPostpone','tnKind','mtForm','mtView','ndForm','ndKind','ndDone','vanEdit','lbPrint','printClose','lbScanLink','scanFind','openCode','scanClose','scanManual','ldOpen','ldDir','ldVan','ldScan','logiSet','efVan'];
   Object.keys(A).forEach(function(k){var f=A[k];if(typeof f!=='function'||SKIP.indexOf(k)>=0)return;A[k]=function(){var top=DEPTH===0;if(top)T0=Date.now();DEPTH++;try{return f.apply(this,arguments);}finally{DEPTH--;if(top&&DIRTY)auditNow();}};});})();
 /* ===== Sincronizare online live (Supabase) – conturi verificate de server (v0.10) ===== */
 var CLOUD=(function(){
@@ -1967,7 +1980,7 @@ var CLOUD=(function(){
     if(c==='seen')return num(d.v);
     if(c==='meta'||c==='prefs')return true;
     if(String(d.id)!==String(row.id))return false;
-    if(c==='items')return str(d.name)&&!!d.name&&str(d.dept)&&str(d.cat)&&(d.mode==='qty'||d.mode==='unit')&&num(d.price)&&d.price>=0&&photoOk(d.photo)&&Array.isArray(d.log)&&Array.isArray(d.units)&&(!d.outs||Array.isArray(d.outs))&&
+    if(c==='items')return str(d.name)&&!!d.name&&str(d.dept)&&str(d.cat)&&(d.mode==='qty'||d.mode==='unit')&&num(d.price)&&d.price>=0&&photoOk(d.photo)&&Array.isArray(d.log)&&Array.isArray(d.units)&&(!d.outs||Array.isArray(d.outs))&&(d.photos==null||(Array.isArray(d.photos)&&d.photos.length<=20&&d.photos.every(photoOk)))&&
       (d.mode==='unit'?d.units.every(function(u){return u&&str(u.code)&&(u.state==='Prezent'||u.state==='Defect'||u.state==='Mentenanță');})
         :(num(d.total)&&d.total>=0&&(d.defect==null||(num(d.defect)&&d.defect>=0))&&(d.maint==null||(num(d.maint)&&d.maint>=0))));
     if(c==='events')return str(d.name)&&!!d.name&&DRE.test(d.from)&&DRE.test(d.to)&&d.to>=d.from&&linesOk(d.lines)&&Array.isArray(d.team)&&d.team.every(str)&&str(d.resp)&&(d.logi==null||(typeof d.logi==='object'&&!Array.isArray(d.logi)&&Object.keys(d.logi).every(function(k){var x=d.logi[k];return x&&typeof x==='object'&&(!x.d||DRE.test(x.d))&&(!x.t||/^\d{2}:\d{2}$/.test(x.t));})))&&(d.vans==null||(Array.isArray(d.vans)&&d.vans.every(str)));
