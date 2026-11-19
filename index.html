@@ -225,7 +225,7 @@ function accRes(r,okMsg){
 }
 function deny(){toast('Nu ai drept pentru această acțiune.',true);}
 function toast(m,bad){var t=document.createElement('div');t.textContent=m;if(bad)t.className='bad';$('toast').appendChild(t);setTimeout(function(){t.remove();},bad?4200:2400);}
-var VERSION='v0.14.1',SCHEMA=9;
+var VERSION='v0.15.0',SCHEMA=9;
 var ZONES0=[
  {id:'c1',name:'Camera 1',desc:'Ultima din video, după ușă: frigider, rafturi și multe flightcase-uri diferite.',x:10,y:10,w:320,h:170},
  {id:'c2',name:'Camera 2',desc:'A doua din video: sunet, rafturi și un birou.',x:10,y:190,w:320,h:150},
@@ -985,7 +985,7 @@ function checkList(){
 }
 function notifView(){
   S.seen[P()+UI.me]=Date.now();save();
-  var h=back()+'<h2>Notificări</h2><div class="card"><b>Ce vreau să primesc</b>';
+  var h=back()+'<h2>Notificări</h2>'+pushCard()+'<div class="card"><b>Ce vreau să primesc</b>';
   Object.keys(NTYPES).forEach(function(k){if(k==='reminder'&&P()!=='depozit')return;h+='<label class="check" style="margin:0;color:var(--ink);font-size:1rem"><span class="grow">'+NTYPES[k]+'</span><input type="checkbox" class="sw" '+(pref(k)?'checked':'')+' onchange="A.setN(\''+k+'\',this.checked)"></label>';});
   h+='</div>';var l=myNotifs();
   h+=l.length?l.map(function(n){return '<div class="card sm">'+esc(n.text)+'<div class="mut">'+new Date(n.at).toLocaleDateString('ro-RO')+'</div></div>';}).join(''):'<div class="card mut">Nicio notificare.</div>';
@@ -1056,7 +1056,7 @@ var A={
       var bt=$('lg-go');if(bt){if(bt.disabled)return;bt.disabled=true;bt.textContent='Se verifică…';}
       CLOUD.login(pid,pw).then(function(r){
         var b2=$('lg-go');if(b2){b2.disabled=false;b2.textContent='Intră';}
-        if(r&&r.ok){UI.me=pid;UI.profile=r.role;UI.tab=r.role==='sef'?'azi':'inv';UI.more='';UI.fails=0;LAST=snap();try{localStorage.setItem('esd-last-me',pid);}catch(e){}if(!r.offline)keepSet(pid,r.role);else keepClear();render();if(r.offline)toast('Ai intrat fără internet.');return;}
+        if(r&&r.ok){UI.me=pid;UI.profile=r.role;UI.tab=r.role==='sef'?'azi':'inv';UI.more='';UI.fails=0;LAST=snap();try{localStorage.setItem('esd-last-me',pid);}catch(e){}if(!r.offline){keepSet(pid,r.role);setTimeout(pushSync,1500);}else keepClear();render();if(r.offline)toast('Ai intrat fără internet.');return;}
         var w=r&&r.why;
         if(w==='locked'){toast('Prea multe încercări greșite. Mai așteaptă 5 minute.',true);}
         else if(w==='net'){toast('Fără internet: pe acest telefon nu ai mai intrat cu această parolă, deci nu o pot verifica acum.',true);}
@@ -1071,7 +1071,7 @@ var A={
     UI.me=pid;UI.profile=a.role;UI.tab=a.role==='sef'?'azi':'inv';UI.more='';UI.fails=0;LAST=snap();try{localStorage.setItem('esd-last-me',pid);}catch(e){}keepSet(pid,a.role);render();
   },
   logout:function(){if(UI.me&&!canSwitch())return;keepClear();UI.profile=null;UI.me=null;closeModal();render();},
-  signout:function(){if(!UI.me)return;confirmBox('Te deloghezi de pe acest telefon? Data viitoare intri din nou cu parola.',function(){keepClear();var p=CLOUD.signout?CLOUD.signout():null;UI.profile=null;UI.me=null;UI.tab='';closeModal();render();toast('Te-ai delogat.');},'Deloghează-mă');},
+  signout:function(){if(!UI.me)return;confirmBox('Te deloghezi de pe acest telefon? Data viitoare intri din nou cu parola.',function(){keepClear();var p=CLOUD.signout?pushDetach().then(function(){return CLOUD.signout();}):null;UI.profile=null;UI.me=null;UI.tab='';closeModal();render();toast('Te-ai delogat.');},'Deloghează-mă');},
   reset:function(){if(!isAdmin()){toast('Doar administratorul poate reseta.',true);return;}if(CLOUD.linked()){toast('Resetarea e oprită cât timp dispozitivul e conectat la datele comune.',true);return;}confirmBox('Revii la datele de exemplu? Toate modificările tale dispar (conturile rămân).',function(){var ac=S.accounts;S=seed();S.accounts=ac;LAST=null;save();R=null;toast('Datele de exemplu au fost readuse.');render();},'Resetează');},
   setQ:function(v){UI.q=v;$('invlist').innerHTML=invList();},
   setDept:function(v){UI.dept=v;render();},
@@ -1326,6 +1326,32 @@ var A={
   },
   rDel:function(id){if(!isSef()){deny();return;}confirmBox('Ștergi închirierea definitiv?',function(){S.rentals=S.rentals.filter(function(r){return r.id!==id;});save();toast('Închiriere ștearsă.');render();},'Șterge');},
   /* notificări, plăți */
+  pushOn:function(){
+    if(!pushSupported()){PUSH.state=isIOS()&&!standalone()?'ios-home':'unsupported';pushPaint();return;}
+    if(!CLOUD.linked()||!CLOUD.ready){toast('Notificările merg doar cu datele comune: intră cu parola, cu internet.',true);return;}
+    var bt=document.querySelector('#pushcard button');if(bt){bt.disabled=true;bt.textContent='Se activează…';}
+    var perm;try{perm=Notification.requestPermission();}catch(e){perm=Promise.resolve(Notification.permission);}
+    Promise.resolve(perm).then(function(p){
+      if(p!=='granted'){PUSH.state=p==='denied'?'denied':'off';pushPaint();toast('Notificările nu au fost permise.',true);return;}
+      return CLOUD.pushKey().then(function(key){
+        if(!key)throw new Error('serverul nu e pregătit');
+        return pushReg().then(function(r){return r.pushManager.getSubscription().then(function(s){
+          return s||r.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:u8key(key)});});});
+      }).then(function(s){return CLOUD.pushSub(s.toJSON(),true);}).then(function(r){
+        if(!r||!r.ok)throw new Error((r&&(r.m||r.why))||'refuzat');
+        PUSH.state='on';pushPaint();toast('✓ Notificările sunt active pe acest telefon.');A.pushTest();
+      });
+    }).catch(function(e){PUSH.state='off';pushPaint();toast('Nu am putut activa notificările: '+((e&&e.message)||e),true);});
+  },
+  pushOff:function(){
+    pushReg().then(function(r){return r&&r.pushManager?r.pushManager.getSubscription():null;}).then(function(s){
+      if(!s)return;return CLOUD.pushSub(s.toJSON(),false).catch(function(){}).then(function(){return s.unsubscribe();});
+    }).then(function(){PUSH.state='off';pushPaint();toast('Notificările sunt oprite pe acest telefon.');}).catch(function(){toast('Nu am putut opri notificările.',true);});
+  },
+  pushTest:function(){
+    if(!UI.me)return;S.notifs.unshift({id:uid('n'),type:'echipa',aud:[],to:[UI.me],test:true,text:'Probă: notificările merg pe acest telefon ('+pname(UI.me)+').',at:Date.now()});if(S.notifs.length>120)S.notifs.length=120;save();
+    toast('Proba a plecat. Ar trebui să apară în câteva secunde.');
+  },
   setFs:function(k){if(!UI.profile||!UI.me)return;if(!S.prefs)S.prefs={};var u=S.prefs[prefKey()]||(S.prefs[prefKey()]={});u.fs=k;save();render();},
   setN:function(k,on){if(!S.prefs)S.prefs={};var u=S.prefs[prefKey()]||(S.prefs[prefKey()]={});u[k]=!!on;save();},
   payEv:function(v){UI.payEv=v;render();},
@@ -1443,6 +1469,42 @@ function logiOn(ds){var out=[];S.events.forEach(function(e){LOGI.forEach(functio
 function logiLine(x){return '<div class="card" style="cursor:pointer" onclick="A.evView(\''+x.e.id+'\')"><span class="pill warn">🚚 '+esc(x.k[1])+(x.t?' · '+esc(x.t):'')+'</span> <b>'+esc(x.e.name)+'</b>'+((x.e.vans||[]).length?'<div class="mut sm">Dube: '+x.e.vans.map(esc).join(', ')+'</div>':'')+'</div>';}
 
 /* ---------- notificări către persoane anume ---------- */
+/* ===== v0.15: notificări reale pe telefon (Web Push) ===== */
+var PUSH={state:'?'};
+function isIOS(){return /iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);}
+function standalone(){try{return (window.matchMedia&&matchMedia('(display-mode: standalone)').matches)||navigator.standalone===true;}catch(e){return false;}}
+function pushSupported(){return /^https?:$/.test(location.protocol)&&('serviceWorker' in navigator)&&('PushManager' in window)&&('Notification' in window);}
+function u8key(b){var p='='.repeat((4-b.length%4)%4),s=atob((b+p).replace(/-/g,'+').replace(/_/g,'/')),a=new Uint8Array(s.length);for(var i=0;i<s.length;i++)a[i]=s.charCodeAt(i);return a;}
+function pushReg(){return navigator.serviceWorker.getRegistration().then(function(r){return r||navigator.serviceWorker.ready;});}
+function pushCheck(){
+  if(!pushSupported())return Promise.resolve(isIOS()&&!standalone()?'ios-home':'unsupported');
+  if(isIOS()&&!standalone())return Promise.resolve('ios-home');
+  if(Notification.permission==='denied')return Promise.resolve('denied');
+  return pushReg().then(function(r){return r&&r.pushManager?r.pushManager.getSubscription():null;}).then(function(s){return s&&Notification.permission==='granted'?'on':'off';}).catch(function(){return 'off';});
+}
+function pushPaint(){var b=$('pushcard');if(b)b.innerHTML=pushCardBody();}
+function pushRefresh(){pushCheck().then(function(st){if(st!==PUSH.state){PUSH.state=st;pushPaint();}});}
+function pushCardBody(){
+  var st=PUSH.state,h='<b>📲 Notificări pe acest telefon</b>';
+  if(!CLOUD.linked())return h+'<div class="mut sm">Merg doar cu datele comune (după conectarea cu codul de echipă).</div>';
+  if(st==='?')return h+'<div class="mut sm">Se verifică…</div>';
+  if(st==='on')return h+'<div class="sm" style="color:var(--ok);margin:4px 0">✓ Active. Primești notificările chiar dacă aplicația e închisă.</div><div class="row" style="gap:8px;flex-wrap:wrap"><button class="btn small" onclick="A.pushTest()">Trimite o probă</button><button class="btn small" onclick="A.pushOff()">Oprește pe acest telefon</button></div>';
+  if(st==='ios-home')return h+'<div class="sm" style="margin:4px 0">Pe iPhone notificările merg doar din aplicația pusă pe ecranul principal: în <b>Safari</b> apasă <b>Partajează</b> → <b>Adaugă pe ecranul principal</b>, deschide aplicația din iconiță și revino aici.</div>';
+  if(st==='unsupported')return h+'<div class="mut sm">Acest browser nu poate primi notificări. Pe Android folosește Chrome; pe iPhone, aplicația de pe ecranul principal (iOS 16.4 sau mai nou).</div>';
+  if(st==='denied')return h+'<div class="sm" style="margin:4px 0">Notificările au fost refuzate pentru aplicație. Le poți porni din <b>Setări</b> telefonului → <b>Notificări</b> → <b>Depozit ESD</b> (pe Android: apasă lung pe iconiță → Informații aplicație → Notificări), apoi revino aici.</div>';
+  return h+'<div class="mut sm" style="margin:4px 0">Primești pe telefon, ca la orice aplicație, notificările bifate mai jos.</div><button class="btn primary block" onclick="A.pushOn()">🔔 Activează notificările</button>';
+}
+function pushCard(){setTimeout(pushRefresh,0);return '<div class="card" id="pushcard">'+pushCardBody()+'</div>';}
+/* telefonul rămâne legat de persoana conectată (după intrare sau schimbarea contului) */
+function pushSync(){
+  if(!pushSupported()||!CLOUD.linked()||!UI.me)return;
+  try{if(Notification.permission!=='granted')return;}catch(e){return;}
+  pushReg().then(function(r){return r&&r.pushManager?r.pushManager.getSubscription():null;}).then(function(s){if(s)return CLOUD.pushSub(s.toJSON(),true);}).catch(function(){});
+}
+function pushDetach(){
+  if(!pushSupported())return Promise.resolve();
+  return pushReg().then(function(r){return r&&r.pushManager?r.pushManager.getSubscription():null;}).then(function(s){if(s)return CLOUD.pushSub(s.toJSON(),false).catch(function(){});}).catch(function(){});
+}
 function notifyP(type,pids,text){var to=[];(pids||[]).forEach(function(p){if(p&&p!==UI.me&&to.indexOf(p)<0&&person(p))to.push(p);});if(!to.length)return;S.notifs.unshift({id:uid('n'),type:type,aud:[],to:to,text:text,at:Date.now()});if(S.notifs.length>120)S.notifs.length=120;}
 
 /* ============ 1. ședințe și taskuri ============ */
@@ -1834,7 +1896,7 @@ Object.keys(A2).forEach(function(k){A[k]=A2[k];});
 window.A=A;
 document.addEventListener('keydown',function(e){if(e.key==='Escape')closeModal();});
 $('modal').addEventListener('click',function(e){if(e.target===$('modal'))closeModal();});
-(function(){var SKIP=['login','logout','signout','go','close','setQ','setDept','setInvDate','mapQ','mapHi','zoneView','elView','imgErr','chkSet','accSug','efSet','efRefresh','cloud','setInvState','aziBad','tkSub','tkFilt','tkView','tkForm','tkPostpone','tnKind','mtForm','mtView','ndForm','ndKind','ndDone','vanEdit','lbPrint','printClose','lbScanLink','scanFind','openCode','scanClose','scanManual','ldOpen','ldDir','ldVan','ldScan','logiSet','efVan'];
+(function(){var SKIP=['login','logout','signout','pushOn','pushOff','go','close','setQ','setDept','setInvDate','mapQ','mapHi','zoneView','elView','imgErr','chkSet','accSug','efSet','efRefresh','cloud','setInvState','aziBad','tkSub','tkFilt','tkView','tkForm','tkPostpone','tnKind','mtForm','mtView','ndForm','ndKind','ndDone','vanEdit','lbPrint','printClose','lbScanLink','scanFind','openCode','scanClose','scanManual','ldOpen','ldDir','ldVan','ldScan','logiSet','efVan'];
   Object.keys(A).forEach(function(k){var f=A[k];if(typeof f!=='function'||SKIP.indexOf(k)>=0)return;A[k]=function(){var top=DEPTH===0;if(top)T0=Date.now();DEPTH++;try{return f.apply(this,arguments);}finally{DEPTH--;if(top&&DIRTY)auditNow();}};});})();
 /* ===== Sincronizare online live (Supabase) – conturi verificate de server (v0.10) ===== */
 var CLOUD=(function(){
@@ -2136,6 +2198,8 @@ var CLOUD=(function(){
     }
     return sb;
   }
+  async function pushKey(){if(!sb||!ready)return null;try{var r=await sb.rpc('esd_push_pubkey');return r.error?null:r.data;}catch(e){return null;}}
+  async function pushSub(sub,on){if(!sb||!sess())return {ok:false,why:'net'};try{var r=await sb.rpc('esd_push_sub',{p_sub:sub,p_on:!!on});if(r.error)return {ok:false,why:'err',m:r.error.message};return r.data||{ok:false};}catch(e){return {ok:false,why:'net'};}}
   var quiet=false;
   async function signout(){
     try{if(ready)await push();}catch(e){}
@@ -2278,7 +2342,7 @@ var CLOUD=(function(){
     /* plasă de siguranță: chiar dacă legătura live cade, datele se aliniază la fiecare 25 de secunde */
     setInterval(function(){if(!document.hidden){reconcile();verify(false);}},T?T.poll||600000:25000);
   }
-  return {start:start,signout:signout,verify:verify,queue:queue,push:push,pull:pull,reconcile:reconcile,connect:connect,login:login,people:people,open:function(){showGate('');},pill:pill,dot:dot,banner:banner,linked:linked,validRow:validRow,applyRow:applyRow,
+  return {start:start,signout:signout,verify:verify,pushKey:pushKey,pushSub:pushSub,queue:queue,push:push,pull:pull,reconcile:reconcile,connect:connect,login:login,people:people,open:function(){showGate('');},pill:pill,dot:dot,banner:banner,linked:linked,validRow:validRow,applyRow:applyRow,
     adminCreate:function(pid,role,pw){return admin('esd_admin_create',{p_person:pid,p_role:role,p_secret:secret(pw)});},
     adminPassword:function(acc,pw){return admin('esd_admin_password',{p_account:acc,p_secret:secret(pw)});},
     adminEnable:function(acc,on){return admin('esd_admin_enable',{p_account:acc,p_on:on});},
@@ -2287,8 +2351,11 @@ var CLOUD=(function(){
     get status(){return status;},get ready(){return ready;},get synced(){return SYNCED;},canon:canon,hs:hs};
 })();
 load();LAST=snap();try{restoreLogin();}catch(e){}render();try{CLOUD.start();}catch(e){}
+setTimeout(function(){try{if(UI.me&&CLOUD.ready)pushSync();}catch(e){}},8000);
 (function(){function chk(){var c=codeOf(location.hash);if(!c)return;try{history.replaceState(null,'',location.pathname+location.search);}catch(e){}if(UI.profile)A.openCode(c);else{UI.pendingCode=c;toast('Intră în aplicație și se deschide eticheta '+c+'.');}}
-  window.addEventListener('hashchange',chk);chk();
+  function nt(){if(location.hash==='#notif'){try{history.replaceState(null,'',location.pathname+location.search);}catch(e){}if(UI.profile)A.go('more','notif');}}
+  window.addEventListener('hashchange',function(){chk();nt();});chk();nt();
+  try{navigator.serviceWorker&&navigator.serviceWorker.addEventListener('message',function(ev){if(ev.data&&ev.data.esd==='notif'&&UI.profile)A.go('more','notif');});}catch(e){}
   var r0=render;render=function(){r0();if(UI.profile&&UI.pendingCode){var c=UI.pendingCode;UI.pendingCode='';setTimeout(function(){A.openCode(c);},0);}};})();
 if(!window.__ESD_DEV){window.__esd={UI:{get profile(){return UI.profile;}}};}else window.__esd={toLogin:function(){keepClear();UI.profile=null;UI.me=null;closeModal();render();},keepGet:function(){return keepGet();},restore:function(){return restoreLogin();},cloud:CLOUD,myNotifs:function(){return myNotifs();},codeOf:codeOf,QR:QR,save:function(){save();},shortages:shortages,reload:function(){load();LAST=snap();render();},get state(){return S;},avail:avail,seed:seed,UI:UI,as:function(pid,role){UI.me=pid;UI.profile=role;UI.tab='inv';UI.more='';LAST=snap();render();},sha:sha256,blockers:blockers};
 })();

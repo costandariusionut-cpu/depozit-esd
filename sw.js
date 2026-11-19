@@ -1,5 +1,5 @@
-/* Service worker Depozit ESD v0.14.1: aplicația merge și fără internet */
-var CACHE='esd-app-v0.14.1',LIB='esd-lib-v1';
+/* Service worker Depozit ESD v0.15.0: aplicația merge și fără internet */
+var CACHE='esd-app-v0.15.0',LIB='esd-lib-v1';
 var FILES=['./','index.html','manifest.webmanifest','icons/icon-192.png','icons/icon-512.png','icons/maskable-512.png','icons/apple-touch-icon.png','icons/favicon-32.png'];
 self.addEventListener('install',function(e){e.waitUntil(caches.open(CACHE).then(function(c){return c.addAll(FILES);}).then(function(){return self.skipWaiting();}));});
 self.addEventListener('activate',function(e){e.waitUntil(caches.keys().then(function(k){return Promise.all(k.filter(function(x){return x!==CACHE&&x!==LIB;}).map(function(x){return caches.delete(x);}));}).then(function(){return self.clients.claim();}));});
@@ -25,5 +25,17 @@ self.addEventListener('fetch',function(e){
   e.respondWith(caches.match(r,{ignoreSearch:true}).then(function(hit){
     var net=fetch(r).then(function(res){return put(CACHE,r,res);}).catch(function(){return hit;});
     return hit||net;
+  }));
+});
+/* v0.15: notificări reale (Web Push), trimise de server prin funcția esd-push */
+self.addEventListener('push',function(e){
+  var d={};try{d=e.data?e.data.json():{};}catch(x){d={body:e.data?e.data.text():''};}
+  e.waitUntil(self.registration.showNotification(d.title||'Depozit ESD',{body:d.body||'',tag:d.tag||undefined,icon:'icons/icon-192.png',badge:'icons/favicon-32.png',data:{url:'./#notif'}}));
+});
+self.addEventListener('notificationclick',function(e){
+  e.notification.close();
+  e.waitUntil(self.clients.matchAll({type:'window',includeUncontrolled:true}).then(function(l){
+    for(var i=0;i<l.length;i++){if('focus' in l[i]){try{l[i].postMessage({esd:'notif'});}catch(x){}return l[i].focus();}}
+    return self.clients.openWindow('./#notif');
   }));
 });
