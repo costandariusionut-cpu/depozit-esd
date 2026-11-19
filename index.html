@@ -22,59 +22,59 @@ window.__ESD_DEV=!/^https?:$/.test(location.protocol)||/^(localhost|127\.0\.0\.1
 <style>
 :root{color-scheme:dark;--bg:#1b1b1d;--card:#262628;--field:#1e1e20;--ink:#f4ead6;--mut:#a89f91;--line:#3b3b3f;--acc:#ee6a3c;--accbg:rgba(238,106,60,.16);--gold:#f2d9a1;--grad:linear-gradient(135deg,#e8472b 0%,#f08a3c 100%);--ok:#79d99b;--okbg:rgba(60,170,105,.18);--warn:#f6b64f;--warnbg:rgba(246,182,79,.16);--bad:#ff8272;--badbg:rgba(229,72,52,.2)}
 *{box-sizing:border-box}
-html,body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:1.0625rem/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
 #app{max-width:760px;margin:0 auto;padding:0 0 92px}
 header.top{position:sticky;top:0;z-index:5;background:#101828;color:#fff;padding:10px 14px;display:flex;align-items:center;gap:10px}
 header.top .who{flex:1;min-width:0}
-header.top .who b{display:block;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-header.top .who span{font-size:13px;opacity:.75}
-header.top button{background:#1f2a44;color:#fff;border:0;border-radius:10px;padding:9px 12px;font-size:15px;min-height:42px}
+header.top .who b{display:block;font-size:min(1rem,17px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+header.top .who span{font-size:min(0.8125rem,14px);opacity:.75}
+header.top button{background:#1f2a44;color:#fff;border:0;border-radius:10px;padding:9px 12px;font-size:0.9375rem;min-height:42px;font-size:min(0.9375rem,16px)}
 main{padding:14px}
-h2{margin:6px 0 12px;font-size:22px}
-h3{margin:14px 0 8px;font-size:18px}
+h2{margin:6px 0 12px;font-size:1.375rem}
+h3{margin:14px 0 8px;font-size:1.125rem}
 .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:10px}
 .row{display:flex;gap:10px;align-items:center}
 .row.top{align-items:flex-start}
 .grow{flex:1;min-width:0}
-.mut{color:var(--mut);font-size:14px}
-.sm{font-size:14px}
-.btn{border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:12px;padding:10px 14px;font-size:16px;min-height:46px;cursor:pointer}
+.mut{color:var(--mut);font-size:0.875rem}
+.sm{font-size:0.875rem}
+.btn{border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:12px;padding:10px 14px;font-size:1rem;min-height:46px;cursor:pointer}
 .btn.primary{background:var(--acc);border-color:var(--acc);color:#fff;font-weight:600}
 .btn.danger{color:var(--bad);border-color:#f1b9b9}
-.btn.small{min-height:38px;padding:6px 11px;font-size:15px}
+.btn.small{min-height:38px;padding:6px 11px;font-size:0.9375rem}
 .btn.block{width:100%}
 .btn:disabled{opacity:.45}
-input,select,textarea{font:inherit;font-size:16px;width:100%;padding:10px;border:1px solid #c5ccd6;border-radius:10px;background:#fff;color:var(--ink);min-height:46px}
+input,select,textarea{font:inherit;font-size:1rem;width:100%;padding:10px;border:1px solid #c5ccd6;border-radius:10px;background:#fff;color:var(--ink);min-height:46px}
 textarea{min-height:70px}
-label{display:block;font-size:14px;color:var(--mut);margin:10px 0 4px}
+label{display:block;font-size:0.875rem;color:var(--mut);margin:10px 0 4px}
 .chips{display:flex;gap:8px;overflow-x:auto;padding:2px 0 10px}
-.chip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:8px 14px;font-size:15px;white-space:nowrap;cursor:pointer;min-height:40px}
+.chip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:8px 14px;font-size:0.9375rem;white-space:nowrap;cursor:pointer;min-height:40px}
 .chip.on{background:var(--acc);border-color:var(--acc);color:#fff}
-.pill{display:inline-block;border-radius:999px;padding:2px 9px;font-size:13px;margin:2px 4px 2px 0;background:#eef0f3;color:#33394a}
+.pill{display:inline-block;border-radius:999px;padding:2px 9px;font-size:0.8125rem;margin:2px 4px 2px 0;background:#eef0f3;color:#33394a}
 .pill.ok{background:var(--okbg);color:var(--ok)}.pill.warn{background:var(--warnbg);color:var(--warn)}.pill.bad{background:var(--badbg);color:var(--bad)}.pill.acc{background:var(--accbg);color:var(--acc)}
 .thumb{width:62px;height:62px;border-radius:10px;object-fit:cover;flex:none;background:#e6e9ee}
 nav.bottom{position:fixed;left:0;right:0;bottom:0;z-index:6;background:#fff;border-top:1px solid var(--line);display:flex;justify-content:center;padding-bottom:env(safe-area-inset-bottom)}
 nav.bottom .inner{display:flex;width:100%;max-width:760px}
-nav.bottom button{flex:1;border:0;background:none;padding:8px 2px 9px;font-size:12px;color:var(--mut);min-height:58px}
-nav.bottom button i{display:block;font-style:normal;font-size:22px;line-height:1.2}
+nav.bottom button{flex:1;border:0;background:none;padding:8px 2px 9px;font-size:0.75rem;color:var(--mut);min-height:58px}
+nav.bottom button i{display:block;font-style:normal;font-size:1.375rem;line-height:1.2}
 nav.bottom button.on{color:var(--acc);font-weight:700}
-.banner{border-radius:12px;padding:10px 12px;margin-bottom:10px;font-size:14px}
+.banner{border-radius:12px;padding:10px 12px;margin-bottom:10px;font-size:0.875rem}
 .banner.warn{background:var(--warnbg);color:#7a3b05}.banner.bad{background:var(--badbg);color:var(--bad)}.banner.info{background:var(--accbg);color:#173a99}
 .modal{position:fixed;inset:0;background:rgba(10,14,22,.55);z-index:20;display:flex;align-items:flex-end;justify-content:center}
 .modal[hidden]{display:none}
 .sheet{background:#fff;width:100%;max-width:760px;max-height:92vh;border-radius:18px 18px 0 0;display:flex;flex-direction:column}
-.sh-head{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--line);font-size:18px}
-.sh-head .x{border:0;background:#eef0f3;border-radius:10px;width:42px;height:42px;font-size:18px}
+.sh-head{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--line);font-size:1.125rem}
+.sh-head .x{border:0;background:#eef0f3;border-radius:10px;width:42px;height:42px;font-size:1.125rem}
 .sh-body{padding:14px 16px 22px;overflow:auto}
 .qty{display:flex;align-items:center;gap:6px}
-.qty button{width:42px;height:42px;border:1px solid #c5ccd6;background:#fff;border-radius:10px;font-size:20px}
+.qty button{width:42px;height:42px;border:1px solid #c5ccd6;background:#fff;border-radius:10px;font-size:1.25rem}
 .qty span{min-width:30px;text-align:center;font-weight:600}
 #toast{position:fixed;left:50%;transform:translateX(-50%);bottom:84px;z-index:30;display:flex;flex-direction:column;gap:6px;align-items:center;pointer-events:none}
-#toast div{background:#101828;color:#fff;border-radius:12px;padding:10px 14px;font-size:15px;max-width:90vw}
+#toast div{background:#101828;color:#fff;border-radius:12px;padding:10px 14px;font-size:0.9375rem;max-width:90vw}
 #toast div.bad{background:var(--bad)}
 .cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
-.cal .dh{text-align:center;font-size:13px;color:var(--mut);padding:2px 0}
-.cal .d{background:#fff;border:1px solid var(--line);border-radius:10px;min-height:54px;padding:4px;font-size:15px;text-align:left;cursor:pointer}
+.cal .dh{text-align:center;font-size:0.8125rem;color:var(--mut);padding:2px 0}
+.cal .d{background:#fff;border:1px solid var(--line);border-radius:10px;min-height:54px;padding:4px;font-size:0.9375rem;text-align:left;cursor:pointer}
 .cal .d.out{opacity:.35}.cal .d.today{border-color:var(--acc);border-width:2px}.cal .d.sel{background:var(--accbg)}
 .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:3px}
 .dot.e{background:var(--gold)}.dot.r{background:#ea580c}.dot.l{background:#38bdf8}
@@ -95,10 +95,11 @@ nav.bottom button.on{color:var(--acc);font-weight:700}
 #printarea .pa-t span{overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical}
 @media screen and (max-width:600px){#printarea .pa-grid{grid-template-columns:repeat(2,1fr)}}
 @media print{body.printing>*:not(#printarea){display:none!important}body.printing #printarea{position:static;padding:0}body.printing #printarea .pa-bar{display:none}html,body.printing{background:#fff!important}body.printing #printarea .pa-lb{border-color:#ddd}@page{size:A4;margin:8mm}body.printing{background:#fff}}
-.menu button{display:flex;width:100%;align-items:center;gap:12px;text-align:left;background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:8px;font-size:17px;min-height:58px}
-.menu button i{font-style:normal;font-size:24px}
-.seg{display:flex;gap:6px;margin-bottom:12px}.seg .chip{flex:1;text-align:center}
-.tot{font-size:20px;font-weight:700}
+.menu button{display:flex;width:100%;align-items:center;gap:12px;text-align:left;background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:8px;font-size:1.0625rem;min-height:58px}
+.menu button i{font-style:normal;font-size:1.5rem}
+input[type=date],input[type=time]{font-size:min(1rem,17px);padding-left:8px;padding-right:6px;min-width:0}
+.seg{display:flex;gap:6px;margin-bottom:12px}.seg .chip{flex:1 1 0;min-width:0;white-space:normal;text-align:center;line-height:1.25;display:flex;align-items:center;justify-content:center}
+.tot{font-size:1.25rem;font-weight:700}
 .check{display:flex;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
 .check input{width:24px;height:24px;min-height:0}
 .check:last-child{border-bottom:0}
@@ -110,12 +111,12 @@ nav.bottom button.on{color:var(--acc);font-weight:700}
 .zn{position:relative;background:#fff;border:2px solid var(--line);border-radius:12px;padding:12px 10px 10px 40px;min-height:92px;cursor:pointer}
 .zn.wide{grid-column:1/-1}
 .zn.hi{border-color:var(--acc);background:var(--accbg);box-shadow:0 0 0 3px rgba(29,78,216,.25)}
-.znn{position:absolute;left:9px;top:10px;width:24px;height:24px;border-radius:50%;background:#101828;color:#fff;font-size:13px;display:flex;align-items:center;justify-content:center}
-.av{width:44px;height:44px;border-radius:50%;object-fit:cover;flex:none;background:#e6e9ee;display:inline-flex;align-items:center;justify-content:center;font-weight:700;color:#fff;font-size:17px}
-.av.big{width:84px;height:84px;font-size:32px}.av.sm2{width:32px;height:32px;font-size:13px}
+.znn{position:absolute;left:9px;top:10px;width:24px;height:24px;border-radius:50%;background:#101828;color:#fff;font-size:0.8125rem;display:flex;align-items:center;justify-content:center}
+.av{width:44px;height:44px;border-radius:50%;object-fit:cover;flex:none;background:#e6e9ee;display:inline-flex;align-items:center;justify-content:center;font-weight:700;color:#fff;font-size:1.0625rem}
+.av.big{width:84px;height:84px;font-size:2rem}.av.sm2{width:32px;height:32px;font-size:0.8125rem}
 .login{max-width:520px;margin:0 auto;padding:26px 16px}
-.login .big{display:block;width:100%;text-align:left;margin-bottom:10px;padding:16px;font-size:19px;border-radius:14px;border:1px solid var(--line);background:#fff;min-height:64px}
-.login .big small{display:block;color:var(--mut);font-size:14px;margin-top:2px}
+.login .big{display:block;width:100%;text-align:left;margin-bottom:10px;padding:16px;font-size:1.1875rem;border-radius:14px;border:1px solid var(--line);background:#fff;min-height:64px}
+.login .big small{display:block;color:var(--mut);font-size:0.875rem;margin-top:2px}
 /* ---- temă ESD: fundal cărbune, accent roșu-portocaliu, litere crem (după sigla Stages) ---- */
 html,body{background:radial-gradient(900px 420px at 50% -80px,#3b2a22 0%,var(--bg) 62%) fixed,var(--bg)}
 h2{color:var(--gold);letter-spacing:.2px}
@@ -159,24 +160,24 @@ nav.bottom button.on i{filter:drop-shadow(0 0 6px rgba(238,106,60,.6))}
 .brand{text-align:center;margin-bottom:22px}
 .logoplate{width:220px;height:220px;margin:0 auto 14px;border-radius:50%;background:radial-gradient(circle at 50% 38%,#2f2f32 0%,#222224 70%);display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 1px rgba(242,217,161,.35),0 18px 40px rgba(0,0,0,.55),0 0 70px rgba(238,106,60,.22)}
 .logoplate img{width:88%;height:88%;object-fit:contain;display:block}
-.brandname{font-size:27px;font-weight:800;letter-spacing:.3px;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
-.brandtag{color:var(--mut);font-size:13px;letter-spacing:2.4px;text-transform:uppercase;margin-top:4px}
+.brandname{font-size:1.6875rem;font-weight:800;letter-spacing:.3px;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.brandtag{color:var(--mut);font-size:0.8125rem;letter-spacing:2.4px;text-transform:uppercase;margin-top:4px}
 .loginbox{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:6px 16px 18px;box-shadow:0 14px 34px rgba(0,0,0,.35)}
 .loginbox::before{content:"";display:block;height:3px;border-radius:3px;background:var(--grad);margin:0 -16px 8px;opacity:.9}
 .login .big{background:var(--card);color:var(--ink)}
 .check input,input[type=checkbox]{accent-color:var(--acc)}
-.login-foot{text-align:center;color:var(--mut);font-size:13px;margin-top:16px}
+.login-foot{text-align:center;color:var(--mut);font-size:0.8125rem;margin-top:16px}
 
 .cst{white-space:nowrap}
 .cstd{cursor:pointer;display:inline-block;vertical-align:middle;margin-left:2px}
 #cloudgate{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center;padding:20px}
 #cloudgate[hidden]{display:none}
 #cloudgate .cg{background:var(--card);border:1px solid #3a3a3d;border-radius:16px;padding:18px;max-width:360px;width:100%;display:flex;flex-direction:column;gap:10px;color:var(--ink)}
-#cloudgate .cg b{font-size:18px;color:var(--gold)}
-#cloudgate .cg p{margin:0;font-size:14px;color:var(--mut)}
-#cloudgate .cg button{background:var(--grad);color:#1a0f08;border:0;border-radius:12px;padding:12px;font-weight:700;font-size:16px;min-height:46px}
+#cloudgate .cg b{font-size:1.125rem;color:var(--gold)}
+#cloudgate .cg p{margin:0;font-size:0.875rem;color:var(--mut)}
+#cloudgate .cg button{background:var(--grad);color:#1a0f08;border:0;border-radius:12px;padding:12px;font-weight:700;font-size:1rem;min-height:46px}
 #cloudgate .cg button.alt{background:#34343a;color:var(--ink);font-weight:600}
-#cloudgate .cge{color:var(--bad);font-size:14px;min-height:16px}
+#cloudgate .cge{color:var(--bad);font-size:0.875rem;min-height:16px}
 /* ---- aplicație instalată: zone sigure (notch, bara de jos), fără selecție/zoom accidental ---- */
 header.top{padding-top:calc(10px + env(safe-area-inset-top));padding-left:calc(14px + env(safe-area-inset-left));padding-right:calc(14px + env(safe-area-inset-right))}
 body{padding-bottom:env(safe-area-inset-bottom);-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%;overscroll-behavior-y:none}
@@ -224,7 +225,7 @@ function accRes(r,okMsg){
 }
 function deny(){toast('Nu ai drept pentru această acțiune.',true);}
 function toast(m,bad){var t=document.createElement('div');t.textContent=m;if(bad)t.className='bad';$('toast').appendChild(t);setTimeout(function(){t.remove();},bad?4200:2400);}
-var VERSION='v0.12.0',SCHEMA=9;
+var VERSION='v0.13.0',SCHEMA=9;
 var ZONES0=[
  {id:'c1',name:'Camera 1',desc:'Ultima din video, după ușă: frigider, rafturi și multe flightcase-uri diferite.',x:10,y:10,w:320,h:170},
  {id:'c2',name:'Camera 2',desc:'A doua din video: sunet, rafturi și un birou.',x:10,y:190,w:320,h:150},
@@ -541,6 +542,11 @@ function avatar(o,cls,dept){if(o&&o.photo&&/^(data:image|https:)/.test(o.photo))
 
 /* ---------- notificări ---------- */
 function prefKey(){return P()+UI.me;}
+var FS=[['n','Normal',1],['m','Mare',1.18],['xm','Foarte mare',1.35]],FSDEF={p_mario:'m'};
+function fsKey(){var u=UI.profile&&UI.me?(S.prefs||{})[prefKey()]:null;if(u&&u.fs)return u.fs;if(UI.profile&&UI.me&&FSDEF[UI.me])return FSDEF[UI.me];if(UI.profile&&UI.me)return 'n';try{return localStorage.getItem('esd-fs')||'n';}catch(e){return 'n';}}
+function fsScale(){var k=fsKey();for(var i=0;i<FS.length;i++)if(FS[i][0]===k)return FS[i][2];return 1;}
+function applyFs(){var k=fsKey(),px=(16*fsScale()).toFixed(2)+'px';var de=document.documentElement;if(de.style.fontSize!==px)de.style.fontSize=px;de.setAttribute('data-fs',k);if(UI.profile&&UI.me){try{localStorage.setItem('esd-fs',k);}catch(e){}}}
+function fsPicker(){var k=fsKey();return '<div class="card"><b>🔠 Mărime text</b><div class="mut sm">Se păstrează pentru contul tău, pe orice telefon.</div><div class="row" style="flex-wrap:wrap;gap:8px;margin-top:8px">'+FS.map(function(f){return '<button class="chip'+(f[0]===k?' on':'')+'" style="font-size:'+(f[2]).toFixed(2)+'rem" onclick="A.setFs(\''+f[0]+'\')">'+(f[0]===k?'✓ ':'')+f[1]+'</button>';}).join('')+'</div></div>';}
 function pref(k){var u=(S.prefs||{})[prefKey()]||{};if(k in u)return u[k]!==false;var r=(S.settings||{})[P()]||{};return r[k]!==false;}
 function notify(type,aud,text){S.notifs.unshift({id:uid('n'),type:type,aud:aud,text:text,at:Date.now()});if(S.notifs.length>120)S.notifs.length=120;}
 function myNotifs(){
@@ -559,7 +565,7 @@ function confirmBox(text,fn,okLabel){UI.pending=fn;openModal('Confirmare','<p>'+
 
 /* ---------- ecran principal ---------- */
 function render(){
-  var app=$('app');
+  var app=$('app');applyFs();
   if(!UI.profile){app.innerHTML=loginView();return;}
   var cnt=myNotifs().filter(function(n){return n.at>(S.seen[P()+UI.me]||0);}).length;
   var h='<header class="top"><img class="hlogo" alt="ESD" src="'+LOGOS+'" onclick="A.go(homeTab())"><div class="who" style="display:flex;gap:8px;align-items:center">'+avatar(person(UI.me),'sm2')+'<div><b>'+esc(pname(UI.me))+' <span class="cstd" onclick="A.cloud()">'+CLOUD.dot()+'</span></b><span>'+esc(PROFILES[P()])+'</span></div></div>'+
@@ -613,7 +619,7 @@ function invList(){
 }
 function itemDetail(id){
   var it=item(id);if(!it)return;
-  var d=UI.invDate||today();var h='<div class="row top">'+pimg(it,'width:90px;height:90px','thumb')+'<div class="grow"><b style="font-size:19px">'+esc(it.name)+'</b><div class="mut">'+esc(it.dept)+' · '+esc(it.cat)+'</div>'+(isSef()?'<div class="mut">Preț rent: '+money(it.price)+' / zi</div>':'')+'</div></div>';
+  var d=UI.invDate||today();var h='<div class="row top">'+pimg(it,'width:90px;height:90px','thumb')+'<div class="grow"><b style="font-size:1.1875rem">'+esc(it.name)+'</b><div class="mut">'+esc(it.dept)+' · '+esc(it.cat)+'</div>'+(isSef()?'<div class="mut">Preț rent: '+money(it.price)+' / zi</div>':'')+'</div></div>';
   h+='<div class="mut sm" style="margin-top:8px">Poză din folder: <b>poze/'+esc(slug(it.name))+'.jpg</b></div>';
   if(it.ref&&!it.photo)h+='<div class="mut sm">Poză de referință de pe internet (model apropiat). O înlocuiești cu a ta din folderul poze/ sau cu butoanele de mai jos.</div>';
   if(it.nota)h+='<div class="banner warn" style="margin-top:10px">'+esc(it.nota)+'</div>';
@@ -673,7 +679,7 @@ function todayView(){
   var badIt=S.items.filter(function(i){return bad(i,'Defect')+bad(i,'Mentenanță')>0;});
   var unpaid=0,nUnpaid=0;S.payments.forEach(function(y){if(!y.paid&&evt(y.event)){unpaid+=y.sum;nUnpaid++;}});
   var tiles=[[startToday.length+running.length,'la evenimente azi','ev',''],[late.length,'retururi întârziate','rent',late.length?'bad':''],[retToday.length+endToday.length,'se întorc azi','rent',''],[badIt.length,'defecte / mentenanță','inv',badIt.length?'warn':'']];
-  h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">'+tiles.map(function(x){return '<div class="card" style="margin:0;cursor:pointer;text-align:center;padding:14px 8px'+(x[3]==='bad'?';border-color:var(--bad)':x[3]==='warn'?';border-color:var(--warn)':'')+'" onclick="'+(x[2]==='inv'?'A.aziBad()':'A.go(\''+x[2]+'\')')+'"><div style="font-size:30px;font-weight:800;line-height:1.1;color:'+(x[3]==='bad'?'var(--bad)':x[3]==='warn'?'var(--warn)':'var(--gold)')+'">'+x[0]+'</div><div class="sm">'+x[1]+'</div></div>';}).join('')+'</div>';
+  h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">'+tiles.map(function(x){return '<div class="card" style="margin:0;cursor:pointer;text-align:center;padding:14px 8px'+(x[3]==='bad'?';border-color:var(--bad)':x[3]==='warn'?';border-color:var(--warn)':'')+'" onclick="'+(x[2]==='inv'?'A.aziBad()':'A.go(\''+x[2]+'\')')+'"><div style="font-size:1.875rem;font-weight:800;line-height:1.1;color:'+(x[3]==='bad'?'var(--bad)':x[3]==='warn'?'var(--warn)':'var(--gold)')+'">'+x[0]+'</div><div class="sm">'+x[1]+'</div></div>';}).join('')+'</div>';
   h+='<div class="row" style="gap:8px;margin-bottom:6px"><button class="btn primary grow" onclick="A.evForm()">+ Eveniment</button><button class="btn primary grow" onclick="A.go(\'rent\');A.rSub(\'new\')">+ Închiriere</button></div>';
   h+='<button class="btn block" style="margin-bottom:12px" onclick="A.go(\'more\',\'check\')">📆 Verifică disponibilitatea</button>';
   function sec(title,arr,fn,empty){return '<h3>'+title+'</h3>'+(arr.length?arr.map(fn).join(''):'<div class="mut sm" style="margin-bottom:8px">'+empty+'</div>');}
@@ -747,7 +753,7 @@ function evFormOpen(id,date,preset){
   '<label>Locație</label><input id="ef-loc" value="'+esc(EF.loc)+'" oninput="A.efSet(\'loc\',this.value)" maxlength="160">'+
   '<div class="row"><div class="grow"><label>De la</label><input type="date" id="ef-from" value="'+esc(EF.from)+'" onchange="A.efDate(\'from\',this.value)"></div><div class="grow"><label>Până la</label><input type="date" id="ef-to" value="'+esc(EF.to)+'" onchange="A.efDate(\'to\',this.value)"></div></div>'+
   '<details class="card" style="margin-top:10px" '+(Object.keys(EF.logi||{}).length?'open':'')+'><summary style="cursor:pointer"><b>🚚 Încărcare și descărcare</b> <span class="mut sm">(opțional)</span></summary>'+LOGI.map(function(k){var x=(EF.logi||{})[k[0]]||{};return '<label>'+k[1]+'</label><div class="row"><input type="date" class="grow" value="'+esc(x.d||'')+'" onchange="A.logiSet(\''+k[0]+'\',\'d\',this.value)"><input type="time" style="width:120px" value="'+esc(x.t||'')+'" onchange="A.logiSet(\''+k[0]+'\',\'t\',this.value)"></div>';}).join('')+
-  '<label>Dube</label><div class="row" style="flex-wrap:wrap;gap:12px">'+vans().map(function(v){return '<label class="check" style="margin:0;color:var(--ink);font-size:16px"><input type="checkbox" '+((EF.vans||[]).indexOf(v)>=0?'checked':'')+' onchange="A.efVan(\''+esc(v).replace(/'/g,'')+'\',this.checked)"><span>🚐 '+esc(v)+'</span></label>';}).join('')+'</div><div class="mut sm" style="margin-top:6px">Echipamentul e rezervat de la încărcarea din depozit până la descărcarea în depozit.</div></details>'+
+  '<label>Dube</label><div class="row" style="flex-wrap:wrap;gap:12px">'+vans().map(function(v){return '<label class="check" style="margin:0;color:var(--ink);font-size:1rem"><input type="checkbox" '+((EF.vans||[]).indexOf(v)>=0?'checked':'')+' onchange="A.efVan(\''+esc(v).replace(/'/g,'')+'\',this.checked)"><span>🚐 '+esc(v)+'</span></label>';}).join('')+'</div><div class="mut sm" style="margin-top:6px">Echipamentul e rezervat de la încărcarea din depozit până la descărcarea în depozit.</div></details>'+
   '<label>Responsabil eveniment</label><select id="ef-resp" onchange="A.efSet(\'resp\',this.value,true)">'+S.persons.map(function(p){return '<option value="'+p.id+'" '+(p.id===EF.resp?'selected':'')+'>'+esc(p.name)+'</option>';}).join('')+'</select>'+
   '<label>Echipă</label><div id="ef-team"></div>'+
   (canAddPerson()?'<button class="btn small" style="margin-top:6px" onclick="A.personForm(true)">+ Persoană nouă</button>':'')+
@@ -759,7 +765,7 @@ function evFormOpen(id,date,preset){
   efRefresh();
 }
 function efRefresh(){
-  var t=$('ef-team');if(t)t.innerHTML=S.persons.map(function(p){return '<label class="check" style="margin:0;color:var(--ink);font-size:16px"><input type="checkbox" '+(EF.team.indexOf(p.id)>=0?'checked':'')+' onchange="A.efTeam(\''+p.id+'\',this.checked)"><span class="grow">'+esc(p.name)+' <span class="mut sm">'+(p.dept&&p.dept!=='—'?esc(p.dept):'')+'</span></span></label>';}).join('');
+  var t=$('ef-team');if(t)t.innerHTML=S.persons.map(function(p){return '<label class="check" style="margin:0;color:var(--ink);font-size:1rem"><input type="checkbox" '+(EF.team.indexOf(p.id)>=0?'checked':'')+' onchange="A.efTeam(\''+p.id+'\',this.checked)"><span class="grow">'+esc(p.name)+' <span class="mut sm">'+(p.dept&&p.dept!=='—'?esc(p.dept):'')+'</span></span></label>';}).join('');
   var w=$('ef-warn');if(w)w.innerHTML=busyWarn();
   var l=$('ef-lines');if(l)l.innerHTML=evLinesHtml();
 }
@@ -829,7 +835,7 @@ function moreView(){
   if(m==='needs')return needsView();
   if(m==='labels')return labelsView();
   var nT=myOpenTasks().length+myMentions().length,nN=(S.needs||[]).filter(function(n){return n.status==='cerut'||n.status==='aprobat';}).length;
-  var h='<h2>Mai mult</h2><div class="menu">'+
+  var h='<h2>Mai mult</h2>'+fsPicker()+'<div class="menu">'+
   '<button onclick="A.go(\'more\',\'tasks\')"><i>📋</i><span class="grow">Taskuri și ședințe</span>'+(nT?'<span class="pill acc">'+nT+'</span>':'')+'</button>'+
   '<button onclick="A.go(\'more\',\'needs\')"><i>🛒</i><span class="grow">Necesar</span>'+(nN?'<span class="pill">'+nN+'</span>':'')+'</button>'+
   '<button onclick="A.go(\'more\',\'labels\')"><i>🏷️</i>Etichete QR</button>'+
@@ -962,7 +968,7 @@ function checkList(){
 function notifView(){
   S.seen[P()+UI.me]=Date.now();save();
   var h=back()+'<h2>Notificări</h2><div class="card"><b>Ce vreau să primesc</b>';
-  Object.keys(NTYPES).forEach(function(k){if(k==='reminder'&&P()!=='depozit')return;h+='<label class="check" style="margin:0;color:var(--ink);font-size:16px"><span class="grow">'+NTYPES[k]+'</span><input type="checkbox" class="sw" '+(pref(k)?'checked':'')+' onchange="A.setN(\''+k+'\',this.checked)"></label>';});
+  Object.keys(NTYPES).forEach(function(k){if(k==='reminder'&&P()!=='depozit')return;h+='<label class="check" style="margin:0;color:var(--ink);font-size:1rem"><span class="grow">'+NTYPES[k]+'</span><input type="checkbox" class="sw" '+(pref(k)?'checked':'')+' onchange="A.setN(\''+k+'\',this.checked)"></label>';});
   h+='</div>';var l=myNotifs();
   h+=l.length?l.map(function(n){return '<div class="card sm">'+esc(n.text)+'<div class="mut">'+new Date(n.at).toLocaleDateString('ro-RO')+'</div></div>';}).join(''):'<div class="card mut">Nicio notificare.</div>';
   return h;
@@ -1006,7 +1012,7 @@ function payFormOpen(){
   '<input id="py-cn" placeholder="Numele componentei noi" style="margin-top:6px;display:none" maxlength="40">'+
   '<div id="py-hint" class="mut sm" style="margin:6px 0"></div>'+
   '<label>Sumă (lei)</label><input id="py-s" type="number" min="0" step="1" inputmode="decimal">'+
-  '<label class="check" style="color:var(--ink);font-size:16px;margin-top:10px"><input type="checkbox" id="py-paid"><span>Deja plătit</span></label>'+
+  '<label class="check" style="color:var(--ink);font-size:1rem;margin-top:10px"><input type="checkbox" id="py-paid"><span>Deja plătit</span></label>'+
   '<button class="btn primary block" style="margin-top:12px" onclick="A.pySave()">Salvează</button>';
   openModal('Notează plata',h);pyHint();
 }
@@ -1300,6 +1306,7 @@ var A={
   },
   rDel:function(id){if(!isSef()){deny();return;}confirmBox('Ștergi închirierea definitiv?',function(){S.rentals=S.rentals.filter(function(r){return r.id!==id;});save();toast('Închiriere ștearsă.');render();},'Șterge');},
   /* notificări, plăți */
+  setFs:function(k){if(!UI.profile||!UI.me)return;if(!S.prefs)S.prefs={};var u=S.prefs[prefKey()]||(S.prefs[prefKey()]={});u.fs=k;save();render();},
   setN:function(k,on){if(!S.prefs)S.prefs={};var u=S.prefs[prefKey()]||(S.prefs[prefKey()]={});u[k]=!!on;save();},
   payEv:function(v){UI.payEv=v;render();},
   payForm:payFormOpen,
@@ -1471,7 +1478,7 @@ function fmtAt(ms){var d=new Date(ms);return pad(d.getDate())+'.'+pad(d.getMonth
 var NOTEKIND={lucru:['Notă de lucru','acc'],ulterior:['Mențiune ulterioară','warn'],stare:['Schimbare de stare','']};
 function taskDetail(id){
   var t=tk(id);if(!t)return;var m=t.meeting&&mt(t.meeting);
-  var h='<div class="row top"><div class="grow"><b style="font-size:19px">'+esc(t.title)+'</b></div>'+tStat(t)+'</div>';
+  var h='<div class="row top"><div class="grow"><b style="font-size:1.1875rem">'+esc(t.title)+'</b></div>'+tStat(t)+'</div>';
   if(t.desc)h+='<div style="margin-top:6px">'+esc(t.desc).replace(/\n/g,'<br>')+'</div>';
   h+='<div class="mut sm" style="margin-top:6px">Responsabil: <b>'+esc(pname(t.owner))+'</b> · creat de '+esc(pname(t.createdBy))+' pe '+fmt(t.created)+(t.due?' · termen '+fmt(t.due):'')+(m?' · asumat la ședința din '+fmt(m.date):'')+'</div>';
   if(canTask(t)){
@@ -1490,7 +1497,7 @@ function taskDetail(id){
   var defK=t.status==='deschis'?'lucru':'ulterior';
   h+='<div class="card"><label style="margin-top:0">Adaugă</label><div class="seg" id="tn-kind">'+['lucru','ulterior'].map(function(k){return '<div class="chip '+(k===defK?'on':'')+'" data-k="'+k+'" onclick="A.tnKind(this)">'+NOTEKIND[k][0]+'</div>';}).join('')+'</div>'+
     '<textarea id="tn-text" maxlength="1500" placeholder="Ce s-a făcut, ce lipsește, ce trebuie de la colegi…"></textarea>'+
-    '<details style="margin-top:6px"><summary class="mut sm" style="cursor:pointer">Menționează colegi care trebuie să facă ceva (le apare în lista lor)</summary>'+S.persons.filter(function(p){return p.id!==UI.me;}).map(function(p){return '<label class="check" style="margin:0;color:var(--ink);font-size:16px"><input type="checkbox" class="tn-m" value="'+p.id+'"><span class="grow">'+esc(p.name)+'</span></label>';}).join('')+'</details>'+
+    '<details style="margin-top:6px"><summary class="mut sm" style="cursor:pointer">Menționează colegi care trebuie să facă ceva (le apare în lista lor)</summary>'+S.persons.filter(function(p){return p.id!==UI.me;}).map(function(p){return '<label class="check" style="margin:0;color:var(--ink);font-size:1rem"><input type="checkbox" class="tn-m" value="'+p.id+'"><span class="grow">'+esc(p.name)+'</span></label>';}).join('')+'</details>'+
     '<button class="btn primary block" style="margin-top:8px" onclick="A.tnAdd(\''+id+'\')">Adaugă nota</button></div>';
   openModal('Task',h);
 }
@@ -1517,7 +1524,7 @@ function meetingFormOpen(id){
   var m=id?mt(id):null,d=new Date();
   var h='<label>Titlu</label><input id="mf-t" maxlength="120" value="'+esc(m?m.title:'Ședință lunară – '+MONTHS[d.getMonth()]+' '+d.getFullYear())+'">'+
   '<label>Data</label><input type="date" id="mf-d" value="'+esc(m?m.date:today())+'">'+
-  '<label>Participanți</label>'+S.persons.map(function(p){return '<label class="check" style="margin:0;color:var(--ink);font-size:16px"><input type="checkbox" class="mf-p" value="'+p.id+'" '+((m?m.people:S.persons.map(function(x){return x.id;})).indexOf(p.id)>=0?'checked':'')+'><span class="grow">'+esc(p.name)+'</span></label>';}).join('')+
+  '<label>Participanți</label>'+S.persons.map(function(p){return '<label class="check" style="margin:0;color:var(--ink);font-size:1rem"><input type="checkbox" class="mf-p" value="'+p.id+'" '+((m?m.people:S.persons.map(function(x){return x.id;})).indexOf(p.id)>=0?'checked':'')+'><span class="grow">'+esc(p.name)+'</span></label>';}).join('')+
   '<label>Ce s-a discutat (opțional)</label><textarea id="mf-n" maxlength="3000">'+esc(m?m.notes:'')+'</textarea>'+
   '<button class="btn primary block" style="margin-top:14px" onclick="A.mtSave('+(id?'\''+id+'\'':'null')+')">'+(m?'Salvează':'Creează ședința')+'</button>';
   openModal(m?'Editează ședința':'Ședință nouă',h);
@@ -1530,7 +1537,7 @@ function needsView(){
   var f=UI.nKind||'',done=UI.nDone,h=back()+'<h2>Necesar</h2><div class="mut sm" style="margin-bottom:8px">Ce trebuie cumpărat sau reparat: consumabile, echipament, dube.</div>';
   h+='<button class="btn primary block" style="margin-bottom:10px" onclick="A.ndForm()">+ Adaugă necesar</button>';
   h+='<div class="seg"><div class="chip '+(!done?'on':'')+'" onclick="A.ndDone(false)">De rezolvat</div><div class="chip '+(done?'on':'')+'" onclick="A.ndDone(true)">Rezolvate / respinse</div></div>';
-  h+='<div class="seg">'+[['','Toate']].concat(Object.keys(NKIND).map(function(k){return [k,NKIND[k]];})).map(function(o){return '<div class="chip '+(f===o[0]?'on':'')+'" onclick="A.ndKind(\''+o[0]+'\')">'+o[1]+'</div>';}).join('')+'</div>';
+  h+='<div class="chips">'+[['','Toate']].concat(Object.keys(NKIND).map(function(k){return [k,NKIND[k]];})).map(function(o){return '<div class="chip '+(f===o[0]?'on':'')+'" onclick="A.ndKind(\''+o[0]+'\')">'+o[1]+'</div>';}).join('')+'</div>';
   var L=(S.needs||[]).filter(function(n){var fin=n.status==='cumparat'||n.status==='respins';return (done?fin:!fin)&&(!f||n.kind===f);})
     .sort(function(a,b){if((a.prio==='urgent')!==(b.prio==='urgent'))return a.prio==='urgent'?-1:1;return b.at-a.at;});
   h+=L.length?L.map(needCard).join(''):'<div class="card mut">Nimic aici.</div>';
@@ -1657,7 +1664,7 @@ function loadView(){
     var units=S2.filter(function(s){return s.item===id&&s.unit;}).map(function(s){return s.unit;});
     var okc=c>=n;
     h+='<div class="row" style="padding:8px 0;border-bottom:1px solid var(--line)"><div class="grow"><b>'+(okc?'✅ ':'')+esc(it?it.name:'(șters)')+'</b><div class="mut sm">'+Object.keys(byV).map(function(v){return esc(v)+': '+byV[v];}).join(' · ')+(units.length?' · '+units.map(esc).join(', '):'')+(labelsOf(id).length?'':' · fără etichete')+'</div></div>'+
-      '<div style="text-align:right"><div style="font-size:18px;font-weight:800;color:'+(okc?'var(--ok)':c?'var(--warn)':'var(--mut)')+'">'+c+' / '+n+'</div>'+(van?'<div class="qty" style="margin-top:4px"><button onclick="A.ldManual(\''+id+'\',-1)">−</button><button onclick="A.ldManual(\''+id+'\',1)">+</button></div>':'')+'</div></div>';});
+      '<div style="text-align:right"><div style="font-size:1.125rem;font-weight:800;color:'+(okc?'var(--ok)':c?'var(--warn)':'var(--mut)')+'">'+c+' / '+n+'</div>'+(van?'<div class="qty" style="margin-top:4px"><button onclick="A.ldManual(\''+id+'\',-1)">−</button><button onclick="A.ldManual(\''+id+'\',1)">+</button></div>':'')+'</div></div>';});
   h+='</div>';
   var pct=tot?Math.round(got*100/tot):0;
   h=h.replace('<div class="card" style="padding:6px 12px">','<div class="card"><div class="row"><b class="grow">'+(dir==='out'?'Încărcat':'Întors')+': '+got+' / '+tot+' bucăți</b><b>'+pct+'%</b></div><div style="height:8px;background:var(--line);border-radius:4px;margin-top:6px"><div style="height:8px;width:'+pct+'%;background:'+(pct===100?'var(--ok)':'var(--acc)')+';border-radius:4px"></div></div>'+(pct===100?'<div style="margin-top:6px;color:var(--ok);font-weight:700">'+(dir==='out'?'Tot echipamentul e încărcat.':'Tot echipamentul s-a întors.')+'</div>':'')+'</div><div class="card" style="padding:6px 12px">');
