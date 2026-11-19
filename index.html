@@ -225,7 +225,7 @@ function accRes(r,okMsg){
 }
 function deny(){toast('Nu ai drept pentru această acțiune.',true);}
 function toast(m,bad){var t=document.createElement('div');t.textContent=m;if(bad)t.className='bad';$('toast').appendChild(t);setTimeout(function(){t.remove();},bad?4200:2400);}
-var VERSION='v0.14.0',SCHEMA=9;
+var VERSION='v0.14.1',SCHEMA=9;
 var ZONES0=[
  {id:'c1',name:'Camera 1',desc:'Ultima din video, după ușă: frigider, rafturi și multe flightcase-uri diferite.',x:10,y:10,w:320,h:170},
  {id:'c2',name:'Camera 2',desc:'A doua din video: sunet, rafturi și un birou.',x:10,y:190,w:320,h:150},
@@ -314,7 +314,8 @@ var REFS={
 };
 var EXTS=['jpg','jpeg','png','webp'];
 function slug(n){return String(n||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');}
-function pimg(it,style,cls){var own=!!it.photo;var src=own?it.photo:'poze/'+slug(it.name)+'.'+EXTS[0];return '<img class="'+cls+'"'+(style?' style="'+style+'"':'')+' src="'+esc(src)+'" data-t="'+(own?-1:0)+'" data-s="'+esc(slug(it.name))+'" data-n="'+esc(it.name)+'" data-d="'+esc(it.dept)+'" data-c="'+esc(it.cat)+'" data-r="'+esc(it.ref||'')+'" onerror="A.imgErr(this)" alt="">';}
+var LOCALPICS=location.protocol==='file:';
+function pimg(it,style,cls){var own=!!it.photo,fold=!own&&LOCALPICS;var src=own?it.photo:fold?'poze/'+slug(it.name)+'.'+EXTS[0]:(it.ref||ph(it.name,it.dept,it.cat));return '<img class="'+cls+'"'+(style?' style="'+style+'"':'')+' src="'+esc(src)+'" data-t="'+(fold?0:-1)+'" data-s="'+esc(slug(it.name))+'" data-n="'+esc(it.name)+'" data-d="'+esc(it.dept)+'" data-c="'+esc(it.cat)+'" data-r="'+esc(it.ref||'')+'" onerror="A.imgErr(this)" alt="">';}
 var ICONS={
  moving:'<path d="M30 90V50Q30 40 40 40H80Q90 40 90 50V90" fill="none"/><rect x="44" y="38" width="32" height="46" rx="9" fill="rgba(255,255,255,.28)"/><circle cx="60" cy="62" r="9" fill="none"/><rect x="38" y="92" width="44" height="9" rx="3" fill="rgba(255,255,255,.28)"/>',
  strobe:'<rect x="20" y="34" width="80" height="52" rx="7" fill="rgba(255,255,255,.18)"/><g fill="#fff" stroke="none"><circle cx="38" cy="52" r="6"/><circle cx="60" cy="52" r="6"/><circle cx="82" cy="52" r="6"/><circle cx="38" cy="70" r="6"/><circle cx="60" cy="70" r="6"/><circle cx="82" cy="70" r="6"/></g>',
@@ -568,7 +569,7 @@ function render(){
   var app=$('app');applyFs();
   if(!UI.profile){app.innerHTML=loginView();return;}
   var cnt=myNotifs().filter(function(n){return n.at>(S.seen[P()+UI.me]||0);}).length;
-  var h='<header class="top"><img class="hlogo" alt="ESD" src="'+LOGOS+'" onclick="A.go(homeTab())"><div class="who" style="display:flex;gap:8px;align-items:center">'+avatar(person(UI.me),'sm2')+'<div><b>'+esc(pname(UI.me))+' <span class="cstd" onclick="A.cloud()">'+CLOUD.dot()+'</span></b><span>'+esc(PROFILES[P()])+'</span></div></div>'+
+  var h='<header class="top"><img class="hlogo" alt="ESD" src="'+LOGOS+'" onclick="A.home()"><div class="who" style="display:flex;gap:8px;align-items:center">'+avatar(person(UI.me),'sm2')+'<div><b>'+esc(pname(UI.me))+' <span class="cstd" onclick="A.cloud()">'+CLOUD.dot()+'</span></b><span>'+esc(PROFILES[P()])+'</span></div></div>'+
     '<button onclick="A.go(\'more\',\'notif\')" aria-label="Notificări">🔔'+(cnt?' '+cnt:'')+'</button>'+(canSwitch()?'<button onclick="A.logout()">Schimbă</button>':'')+'</header><main><div id="cstb">'+CLOUD.banner()+'</div>';
   var body='';
   if(UI.tab==='azi'&&!isSef())UI.tab='inv';
@@ -636,8 +637,8 @@ function invList(){
 function itemDetail(id){
   var it=item(id);if(!it)return;
   var d=UI.invDate||today();var h='<div class="row top">'+pimg(it,'width:90px;height:90px','thumb')+'<div class="grow"><b style="font-size:1.1875rem">'+esc(it.name)+'</b><div class="mut">'+esc(it.dept)+' · '+esc(it.cat)+'</div>'+(isSef()?'<div class="mut">Preț rent: '+money(it.price)+' / zi</div>':'')+'</div></div>';
-  h+='<div class="mut sm" style="margin-top:8px">Poză din folder: <b>poze/'+esc(slug(it.name))+'.jpg</b></div>';
-  if(it.ref&&!it.photo)h+='<div class="mut sm">Poză de referință de pe internet (model apropiat). O înlocuiești cu a ta din folderul poze/ sau cu butoanele de mai jos.</div>';
+  if(LOCALPICS)h+='<div class="mut sm" style="margin-top:8px">Poză din folder: <b>poze/'+esc(slug(it.name))+'.jpg</b></div>';
+  if(it.ref&&!it.photo)h+='<div class="mut sm">Poză de referință de pe internet (model apropiat). O înlocuiești cu a ta '+(LOCALPICS?'din folderul poze/ sau ':'')+'cu butoanele de mai jos.</div>';
   if(it.nota)h+='<div class="banner warn" style="margin-top:10px">'+esc(it.nota)+'</div>';
   var L=it.loc||{};h+='<h3>Locație</h3><div>'+((L.z||L.r||L.n)?esc(zoneLabel(L.z)||'–')+(L.e&&elById(L.e)?' · '+esc(elById(L.e).n):'')+(it.zoneGuess?' <span class="pill">orientativ</span>':'')+' → raft '+esc(L.r||'–')+' → nivel '+esc(L.n||'–'):'<span class="mut">Nealocat încă</span>')+'</div>';
   h+='<h3>Stare</h3>';
@@ -1045,6 +1046,7 @@ function pyHint(){
 var A={
   close:closeModal,
   yes:function(){var f=UI.pending;UI.pending=null;closeModal();if(f)f();},
+  home:function(){A.go(homeTab());},
   go:function(tab,more){UI.tab=tab;UI.loadOn=false;if(more!==undefined)UI.more=more;else if(tab==='more')UI.more='';closeModal();render();window.scrollTo(0,0);},
   login:function(){
     var now=Date.now();if(UI.lock>now){toast('Prea multe încercări. Mai așteaptă '+Math.ceil((UI.lock-now)/1000)+' secunde.',true);return;}
@@ -1801,7 +1803,7 @@ var A2={
     code=codeOf(code);if(!code){toast('Nu e o etichetă ESD.',true);return;}var l=lb(code);
     if(l&&l.item&&item(l.item)){itemDetail(l.item);return;}
     if(!canItems()){toast('Eticheta '+code+' nu e legată de niciun articol. Cere-i Responsabilului de depozit s-o lege.',true);return;}
-    openModal('Etichetă '+code,'<div>Eticheta <b>'+esc(code)+'</b> nu e legată de niciun articol. Alege articolul:</div><select id="ol-i" style="margin-top:8px">'+DEPTS.map(function(dp){var g=S.items.filter(function(it){return it.dept===dp;});return g.length?'<optgroup label="'+dp+'">'+g.map(function(it){return '<option value="'+it.id+'">'+esc(it.name)+'</option>';}).join('')+'</optgroup>':'';}).join('')+'</select><button class="btn primary block" style="margin-top:10px" onclick="A.lbLink(\''+code+'\',$(\'ol-i\').value)">Leagă</button>');
+    openModal('Etichetă '+code,'<div>Eticheta <b>'+esc(code)+'</b> nu e legată de niciun articol. Alege articolul:</div><select id="ol-i" style="margin-top:8px">'+DEPTS.map(function(dp){var g=S.items.filter(function(it){return it.dept===dp;});return g.length?'<optgroup label="'+dp+'">'+g.map(function(it){return '<option value="'+it.id+'">'+esc(it.name)+'</option>';}).join('')+'</optgroup>':'';}).join('')+'</select><button class="btn primary block" style="margin-top:10px" onclick="A.lbLink(\''+code+'\',document.getElementById(\'ol-i\').value)">Leagă</button>');
   },
   scanClose:function(){scanStop();},
   scanManual:function(){var v=$('sb-code').value;if(!v.trim())return;$('sb-code').value='';scanHit(v);},
