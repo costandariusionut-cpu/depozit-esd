@@ -84,7 +84,9 @@ nav.bottom button.on{color:var(--acc);font-weight:700}
 #scanbox .sb-v{position:relative;margin:10px 0;border-radius:12px;overflow:hidden;background:#000;aspect-ratio:1/1}
 #scanbox video{width:100%;height:100%;object-fit:cover;display:block}
 #scanbox .sb-frame{position:absolute;inset:18%;border:3px solid var(--acc);border-radius:14px;box-shadow:0 0 0 999px rgba(0,0,0,.25)}
-#printarea{position:fixed;inset:0;z-index:160;background:#fff;color:#000;overflow:auto;padding:12px}
+#printarea{position:fixed;inset:0;z-index:160;background:#fff;color:#000;overflow:auto;padding:calc(env(safe-area-inset-top,0px) + 76px) 12px calc(env(safe-area-inset-bottom,0px) + 24px)}
+#printarea .pa-bar{position:fixed;left:0;right:0;top:0;z-index:161;margin:0!important;padding:calc(env(safe-area-inset-top,0px) + 10px) 12px 10px;background:#f4f4f4;border-bottom:1px solid #ccc;box-shadow:0 2px 10px rgba(0,0,0,.12)}
+#printarea .pa-bar .btn{min-height:44px}
 #printarea[hidden]{display:none}
 @media print{html,body,body.printing{background:#fff!important;color-scheme:light!important}:root{color-scheme:light!important}body.printing #printarea{position:static!important;padding:0!important;overflow:visible!important}}
 #printarea .pa-doc{font:12px/1.35 system-ui,sans-serif;color:#000;max-width:190mm}#printarea .pa-doc h1{font-size:18px;margin:0 0 4px}#printarea .pa-doc table{width:100%;border-collapse:collapse;margin-top:8px}#printarea .pa-doc th,#printarea .pa-doc td{border:1px solid #999;padding:4px 6px;text-align:left;vertical-align:top}#printarea .pa-doc th{background:#eee}#printarea .pa-doc .bx{width:14px;height:14px;border:1.5px solid #000;display:inline-block}#printarea .pa-doc .dp{background:#f4f4f4;font-weight:700}
@@ -234,7 +236,7 @@ function accRes(r,okMsg){
 }
 function deny(){toast('Nu ai drept pentru această acțiune.',true);}
 function toast(m,bad){var t=document.createElement('div');t.textContent=m;if(bad)t.className='bad';$('toast').appendChild(t);setTimeout(function(){t.remove();},bad?4200:2400);}
-var VERSION='v0.25.0',SCHEMA=9;
+var VERSION='v0.25.1',SCHEMA=9;
 var ZONES0=[
  {id:'c1',name:'Camera 1',desc:'Ultima din video, după ușă: frigider, rafturi și multe flightcase-uri diferite.',x:10,y:10,w:320,h:170},
  {id:'c2',name:'Camera 2',desc:'A doua din video: sunet, rafturi și un birou.',x:10,y:190,w:320,h:150},
