@@ -86,6 +86,8 @@ nav.bottom button.on{color:var(--acc);font-weight:700}
 #scanbox .sb-frame{position:absolute;inset:18%;border:3px solid var(--acc);border-radius:14px;box-shadow:0 0 0 999px rgba(0,0,0,.25)}
 #printarea{position:fixed;inset:0;z-index:160;background:#fff;color:#000;overflow:auto;padding:12px}
 #printarea[hidden]{display:none}
+@media print{html,body,body.printing{background:#fff!important;color-scheme:light!important}:root{color-scheme:light!important}body.printing #printarea{position:static!important;padding:0!important;overflow:visible!important}}
+#printarea .pa-doc{font:12px/1.35 system-ui,sans-serif;color:#000;max-width:190mm}#printarea .pa-doc h1{font-size:18px;margin:0 0 4px}#printarea .pa-doc table{width:100%;border-collapse:collapse;margin-top:8px}#printarea .pa-doc th,#printarea .pa-doc td{border:1px solid #999;padding:4px 6px;text-align:left;vertical-align:top}#printarea .pa-doc th{background:#eee}#printarea .pa-doc .bx{width:14px;height:14px;border:1.5px solid #000;display:inline-block}#printarea .pa-doc .dp{background:#f4f4f4;font-weight:700}
 #printarea .pa-bar{display:flex;gap:8px;align-items:center;margin-bottom:12px}
 #printarea .pa-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:0}
 #printarea .pa-lb{display:flex;align-items:center;gap:6px;padding:6px;border:1px dashed #bbb;height:34mm;box-sizing:border-box;overflow:hidden;page-break-inside:avoid;break-inside:avoid}
@@ -225,7 +227,7 @@ function accRes(r,okMsg){
 }
 function deny(){toast('Nu ai drept pentru această acțiune.',true);}
 function toast(m,bad){var t=document.createElement('div');t.textContent=m;if(bad)t.className='bad';$('toast').appendChild(t);setTimeout(function(){t.remove();},bad?4200:2400);}
-var VERSION='v0.19.0',SCHEMA=9;
+var VERSION='v0.20.0',SCHEMA=9;
 var ZONES0=[
  {id:'c1',name:'Camera 1',desc:'Ultima din video, după ușă: frigider, rafturi și multe flightcase-uri diferite.',x:10,y:10,w:320,h:170},
  {id:'c2',name:'Camera 2',desc:'A doua din video: sunet, rafturi și un birou.',x:10,y:190,w:320,h:150},
@@ -749,7 +751,7 @@ function evDetail(id){
   var h='<div class="mut">'+fmt(e.from)+(e.to!==e.from?' – '+fmt(e.to):'')+'</div><div><b>Unde:</b> '+esc(e.loc||'—')+'</div><div><b>Responsabil:</b> '+esc(pname(e.resp))+'</div><div class="mut sm">Creat de '+esc(pname(e.createdBy))+'</div>';
   var LG=LOGI.filter(function(k){return logiText(e,k[0]);});
   if(LG.length||(e.vans||[]).length)h+='<h3>Încărcare și descărcare</h3>'+LG.map(function(k){return '<div class="row" style="padding:2px 0"><div class="grow">'+k[1]+'</div><b>'+logiText(e,k[0])+'</b></div>';}).join('')+((e.vans||[]).length?'<div class="mut sm">Dube: '+e.vans.map(esc).join(', ')+'</div>':'');
-  if(e.lines.length){var ls=loadSummary(e);h+='<button class="btn primary block" style="margin-top:10px" onclick="A.ldOpen(\''+id+'\')">📦 Încărcare / descărcare cu scanare'+(ls.got?' ('+ls.got+' / '+ls.tot+')':'')+'</button>';}
+  if(e.lines.length){var ls=loadSummary(e);h+='<button class="btn primary block" style="margin-top:10px" onclick="A.ldOpen(\''+id+'\')">📦 Încărcare / descărcare cu scanare'+(ls.got?' ('+ls.got+' / '+ls.tot+')':'')+'</button><button class="btn block" style="margin-top:8px" onclick="A.evPrint(\''+id+'\')">🖨️ Listă de încărcare (print / PDF)</button>';}
   h+='<h3>Echipă</h3><div>'+(e.team.length?e.team.map(function(p){return '<span class="pill acc">'+esc(pname(p))+'</span>';}).join(''):'<span class="mut">Nimeni adăugat</span>')+'</div>';
   h+='<h3>Ce trebuie dus</h3>'+(e.lines.length?e.lines.map(function(l){var it=item(l.item);return '<div class="row" style="padding:4px 0"><div class="grow">'+esc(it?it.name:'(șters)')+'</div><b>'+l.qty+'</b></div>';}).join(''):'<div class="mut">Niciun echipament.</div>');
   if(e.notes)h+='<h3>Note</h3><div>'+esc(e.notes).replace(/\n/g,'<br>')+'</div>';
@@ -1152,6 +1154,9 @@ var A={
     var csv='\ufeff'+rows.map(function(r){return r.map(q).join(';');}).join('\r\n');
     try{var b=new Blob([csv],{type:'text/csv;charset=utf-8'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='inventar-ESD-'+today()+'.csv';document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove();},2000);toast('Inventarul a fost descărcat ('+(rows.length-1)+' articole).');}
     catch(e){toast('Nu am putut descărca fișierul.',true);}},
+  evPrint:function(id){var e=evt(id);if(!e)return;closeModal();var box=$('printarea');if(!box){box=document.createElement('div');box.id='printarea';document.body.appendChild(box);}
+    box.innerHTML='<div class="pa-bar"><button class="btn primary" onclick="window.print()">🖨️ Printează / Salvează PDF</button><button class="btn" onclick="A.printClose()">Închide</button></div>'+evPrintHtml(e);
+    box.hidden=false;document.body.classList.add('printing');},
   ifPhoto:function(cam){if(!canItems()){deny();return;}pickImage(cam,function(d){UI.ifPh=d;var b=$('if-ph');if(b)b.innerHTML=ifPhBox(null);toast('Poză pregătită. Apasă „Salvează”.');});},
   photoPick:function(id,cam){
     if(!canItems()){deny();return;}var inp=document.createElement('input');inp.type='file';inp.accept='image/*';if(cam)inp.setAttribute('capture','environment');
@@ -1725,6 +1730,21 @@ function labelsView(){
   if(free.length)h+='<h3>Nelegate ('+free.length+')</h3><div class="mut sm">'+free.map(function(l){return esc(l.id);}).join(', ')+'</div>';
   return h;
 }
+/* v0.20: lista de încărcare a evenimentului, de printat sau salvat ca PDF */
+function evPrintHtml(e){
+  var L=(e.lines||[]).map(function(l){var it=item(l.item);return {it:it,q:l.qty};}).filter(function(x){return x.it;});
+  L.sort(function(a,b){return (a.it.dept+a.it.name).localeCompare(b.it.dept+b.it.name,'ro');});
+  var rows='',dp='';L.forEach(function(x){if(x.it.dept!==dp){dp=x.it.dept;rows+='<tr><td class="dp" colspan="5">'+esc(dp)+'</td></tr>';}var Lc=x.it.loc||{};
+    rows+='<tr><td>'+esc(x.it.name)+'</td><td style="text-align:center"><b>'+x.q+'</b></td><td>'+esc([zoneLabel(Lc.z),Lc.r?'raft '+Lc.r:'',Lc.n?'nivel '+Lc.n:''].filter(Boolean).join(' · '))+'</td><td style="text-align:center"><span class="bx"></span></td><td style="text-align:center"><span class="bx"></span></td></tr>';});
+  var tot=0;L.forEach(function(x){tot+=x.q;});
+  return '<div class="pa-doc"><h1>'+esc(e.name)+'</h1><div>'+fmt(e.from)+(e.to!==e.from?' – '+fmt(e.to):'')+(e.loc?' · '+esc(e.loc):'')+'</div>'+
+    (function(){var t=LOGI.filter(function(k){return logiText(e,k[0]);}).map(function(k){return k[1]+': '+logiText(e,k[0]);});return t.length?'<div>'+t.join(' · ')+'</div>':'';})()+
+    '<div>Responsabil: <b>'+esc(pname(e.resp))+'</b> · Echipa: '+esc((e.team||[]).map(pname).join(', '))+((e.vans||[]).length?' · Dube: '+esc(e.vans.join(', ')):'')+'</div>'+
+    '<table><tr><th>Articol</th><th style="width:40px">Buc.</th><th>Unde e în depozit</th><th style="width:60px">Încărcat</th><th style="width:60px">Întors</th></tr>'+rows+'</table>'+
+    '<div style="margin-top:6px">Total: <b>'+tot+'</b> bucăți, '+L.length+' articole.'+(e.notes?' Note: '+esc(e.notes):'')+'</div>'+
+    '<div style="margin-top:14px;display:flex;gap:30px"><div>Încărcat de: ____________________</div><div>Verificat la întoarcere: ____________________</div></div>'+
+    '<div style="margin-top:8px;color:#666;font-size:10px">Depozit ESD · listă generată '+fmt(today())+'</div></div>';
+}
 function printLabels(list){
   if(!list.length){toast('Nicio etichetă de printat.',true);return;}
   var box=$('printarea');if(!box){box=document.createElement('div');box.id='printarea';document.body.appendChild(box);}
@@ -1946,7 +1966,7 @@ Object.keys(A2).forEach(function(k){A[k]=A2[k];});
 window.A=A;
 document.addEventListener('keydown',function(e){if(e.key==='Escape')closeModal();});
 $('modal').addEventListener('click',function(e){if(e.target===$('modal'))closeModal();});
-(function(){var SKIP=['login','logout','signout','mode','tcSug','tcSave','ifPhoto','phView','invExport','pushOn','pushOff','go','close','setQ','setDept','setInvDate','mapQ','mapHi','zoneView','elView','imgErr','chkSet','accSug','efSet','efRefresh','cloud','setInvState','aziBad','tkSub','tkFilt','tkView','tkForm','tkPostpone','tnKind','mtForm','mtView','ndForm','ndKind','ndDone','vanEdit','lbPrint','printClose','lbScanLink','scanFind','openCode','scanClose','scanManual','ldOpen','ldDir','ldVan','ldScan','logiSet','efVan'];
+(function(){var SKIP=['login','logout','signout','mode','tcSug','tcSave','ifPhoto','phView','invExport','evPrint','pushOn','pushOff','go','close','setQ','setDept','setInvDate','mapQ','mapHi','zoneView','elView','imgErr','chkSet','accSug','efSet','efRefresh','cloud','setInvState','aziBad','tkSub','tkFilt','tkView','tkForm','tkPostpone','tnKind','mtForm','mtView','ndForm','ndKind','ndDone','vanEdit','lbPrint','printClose','lbScanLink','scanFind','openCode','scanClose','scanManual','ldOpen','ldDir','ldVan','ldScan','logiSet','efVan'];
   Object.keys(A).forEach(function(k){var f=A[k];if(typeof f!=='function'||SKIP.indexOf(k)>=0)return;A[k]=function(){var top=DEPTH===0;if(top)T0=Date.now();DEPTH++;try{return f.apply(this,arguments);}finally{DEPTH--;if(top&&DIRTY)auditNow();}};});})();
 /* ===== Sincronizare online live (Supabase) – conturi verificate de server (v0.10) ===== */
 var CLOUD=(function(){
