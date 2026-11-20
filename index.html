@@ -227,7 +227,7 @@ function accRes(r,okMsg){
 }
 function deny(){toast('Nu ai drept pentru această acțiune.',true);}
 function toast(m,bad){var t=document.createElement('div');t.textContent=m;if(bad)t.className='bad';$('toast').appendChild(t);setTimeout(function(){t.remove();},bad?4200:2400);}
-var VERSION='v0.20.0',SCHEMA=9;
+var VERSION='v0.20.1',SCHEMA=9;
 var ZONES0=[
  {id:'c1',name:'Camera 1',desc:'Ultima din video, după ușă: frigider, rafturi și multe flightcase-uri diferite.',x:10,y:10,w:320,h:170},
  {id:'c2',name:'Camera 2',desc:'A doua din video: sunet, rafturi și un birou.',x:10,y:190,w:320,h:150},
@@ -641,9 +641,12 @@ function invView(){
   h+='<div id="invlist" style="margin-top:12px">'+invList()+'</div>';
   return h;
 }
+/* v0.20.1: căutare fără diacritice, pe mai multe cuvinte (nume, categorie, notă, departament) */
+function fold(x){return String(x||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();}
+function itemMatch(i,q){if(!q)return true;var h=fold(i.name+' '+i.cat+' '+(i.nota||'')+' '+i.dept);return fold(q).split(/\s+/).filter(Boolean).every(function(w){return h.indexOf(w)>=0;});}
 function invList(){
-  var d=UI.invDate||today();var q=UI.q.toLowerCase();var out='';
-  var md=myDept(),st=UI.invState||'all';var list=S.items.filter(function(i){return (md?i.dept===md:(UI.dept==='Toate'||i.dept===UI.dept))&&(!q||(i.name+' '+i.cat).toLowerCase().indexOf(q)>=0)&&(st==='all'||(st==='free'&&avail(i,d,d)>0)||(st==='none'&&avail(i,d,d)===0)||(st==='bad'&&bad(i,'Defect')+bad(i,'Mentenanță')>0));});
+  var d=UI.invDate||today();var q=(UI.q||'').trim();var out='';
+  var md=myDept(),st=UI.invState||'all';var list=S.items.filter(function(i){return (md?i.dept===md:(UI.dept==='Toate'||i.dept===UI.dept))&&itemMatch(i,q)&&(st==='all'||(st==='free'&&avail(i,d,d)>0)||(st==='none'&&avail(i,d,d)===0)||(st==='bad'&&bad(i,'Defect')+bad(i,'Mentenanță')>0));});
   if(!list.length)return '<div class="card mut">Niciun articol găsit.</div>';
   list.forEach(function(it){
     var av=avail(it,d,d),tot=totalQ(it),res=reserved(it.id,d,d),df=bad(it,'Defect'),mt=bad(it,'Mentenanță');
@@ -892,7 +895,7 @@ function moreView0(){
 function back(){return '<button class="btn small" style="margin-bottom:8px" onclick="A.go(\'more\',\'\')">‹ Înapoi</button>';}
 function mapRes(){
   var q=(UI.mapQ||'').trim().toLowerCase();if(q.length<2)return '';
-  var l=S.items.filter(function(it){return (it.name+' '+it.cat).toLowerCase().indexOf(q)>=0;}).slice(0,8);
+  var l=S.items.filter(function(it){return itemMatch(it,q);}).slice(0,8);
   if(!l.length)return '<div class="mut sm" style="padding:6px 0">Niciun articol găsit.</div>';
   return l.map(function(it){var z=zoneById(it.loc&&it.loc.z),e=elById(it.loc&&it.loc.e);return '<div class="card row" style="padding:8px 10px;cursor:pointer" onclick="A.mapHi(\''+it.id+'\')"><div class="grow"><b>'+esc(it.name)+'</b><div class="mut sm">'+(z?esc(z.name)+(e?' · '+esc(e.n):'')+(it.zoneGuess?' (orientativ)':''):'Nealocat încă')+'</div></div><span class="pill acc">Arată</span></div>';}).join('');
 }
@@ -984,7 +987,7 @@ function teamCodeCard(){
 }
 function accountsView(){
   if(!isAdmin())return '';
-  var h=back()+'<h2>Conturi</h2><div class="banner info">Doar tu vezi acest ecran. Parolele nu pot fi citite, doar schimbate.'+(CLOUD.linked()?' Sunt verificate de server; o parolă nouă deconectează persoana de pe telefoanele ei.':' Lista cu parolele inițiale e în fișierul CONTURI-SI-PAROLE.md.')+'</div>'+teamCodeCard()+'<button class="btn primary block" style="margin-bottom:10px" onclick="A.accForm()">+ Cont nou</button>';
+  var h=back()+'<h2>Conturi</h2><div class="banner info">Doar tu vezi acest ecran. Parolele nu pot fi citite, doar schimbate.'+(CLOUD.linked()?' Sunt verificate de server; o parolă nouă deconectează persoana de pe telefoanele ei.':' Lista cu parolele inițiale e în fișierul CONTURI-SI-PAROLE.md.')+'</div>'+teamCodeCard()+'<div class="card"><b>💾 Copie de siguranță</b><div class="mut sm" style="margin:4px 0 8px">Descarcă toate datele (inventar, evenimente, rent, taskuri, plăți…) într-un fișier. Păstrează-l pe calculator; fără parole.</div><button class="btn block" onclick="A.backup()">Descarcă copia (.json)</button></div><button class="btn primary block" style="margin-bottom:10px" onclick="A.accForm()">+ Cont nou</button>';
   S.persons.forEach(function(p){
     var l=S.accounts.filter(function(a){return a.person===p.id;});
     h+='<div class="card"><div class="row" style="align-items:center">'+avatar(p)+'<div class="grow"><b>'+esc(p.name)+'</b><div class="mut sm">'+esc(p.dept&&p.dept!=='—'?p.dept:'')+'</div></div></div>';
@@ -1146,6 +1149,10 @@ var A={
     if(used){toast('Articolul e folosit într-o închiriere sau un eveniment activ. Elimină-l întâi de acolo.',true);return;}
     confirmBox('Ștergi articolul definitiv?',function(){S.items=S.items.filter(function(i){return i.id!==id;});save();toast('Articol șters.');render();},'Șterge');
   },
+  backup:function(){if(!isAdmin()){deny();return;}
+    var o={app:'Depozit ESD',versiune:VERSION,creat:new Date().toISOString(),date:{}};
+    Object.keys(S).forEach(function(k){if(k==='accounts'){o.date.accounts=(S.accounts||[]).map(function(a){return {id:a.id,person:a.person,role:a.role,on:a.on!==false};});return;}o.date[k]=S[k];});
+    try{var b=new Blob([JSON.stringify(o,null,1)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='copie-ESD-'+today()+'.json';document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove();},2000);toast('Copia a fost descărcată.');}catch(e){toast('Nu am putut descărca copia.',true);}},
   invExport:function(){if(!(isSef()||isAdmin())){deny();return;}
     var q=function(v){v=v==null?'':String(v);return /[;"\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;};
     var rows=[['Departament','Categorie','Articol','Total','Utilizabile','Defect','Mentenanță','Cameră','Raft','Nivel','Poze','Notă']];
@@ -1966,7 +1973,7 @@ Object.keys(A2).forEach(function(k){A[k]=A2[k];});
 window.A=A;
 document.addEventListener('keydown',function(e){if(e.key==='Escape')closeModal();});
 $('modal').addEventListener('click',function(e){if(e.target===$('modal'))closeModal();});
-(function(){var SKIP=['login','logout','signout','mode','tcSug','tcSave','ifPhoto','phView','invExport','evPrint','pushOn','pushOff','go','close','setQ','setDept','setInvDate','mapQ','mapHi','zoneView','elView','imgErr','chkSet','accSug','efSet','efRefresh','cloud','setInvState','aziBad','tkSub','tkFilt','tkView','tkForm','tkPostpone','tnKind','mtForm','mtView','ndForm','ndKind','ndDone','vanEdit','lbPrint','printClose','lbScanLink','scanFind','openCode','scanClose','scanManual','ldOpen','ldDir','ldVan','ldScan','logiSet','efVan'];
+(function(){var SKIP=['login','logout','signout','mode','tcSug','tcSave','ifPhoto','phView','invExport','evPrint','backup','pushOn','pushOff','go','close','setQ','setDept','setInvDate','mapQ','mapHi','zoneView','elView','imgErr','chkSet','accSug','efSet','efRefresh','cloud','setInvState','aziBad','tkSub','tkFilt','tkView','tkForm','tkPostpone','tnKind','mtForm','mtView','ndForm','ndKind','ndDone','vanEdit','lbPrint','printClose','lbScanLink','scanFind','openCode','scanClose','scanManual','ldOpen','ldDir','ldVan','ldScan','logiSet','efVan'];
   Object.keys(A).forEach(function(k){var f=A[k];if(typeof f!=='function'||SKIP.indexOf(k)>=0)return;A[k]=function(){var top=DEPTH===0;if(top)T0=Date.now();DEPTH++;try{return f.apply(this,arguments);}finally{DEPTH--;if(top&&DIRTY)auditNow();}};});})();
 /* ===== Sincronizare online live (Supabase) – conturi verificate de server (v0.10) ===== */
 var CLOUD=(function(){
