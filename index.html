@@ -227,7 +227,7 @@ function accRes(r,okMsg){
 }
 function deny(){toast('Nu ai drept pentru această acțiune.',true);}
 function toast(m,bad){var t=document.createElement('div');t.textContent=m;if(bad)t.className='bad';$('toast').appendChild(t);setTimeout(function(){t.remove();},bad?4200:2400);}
-var VERSION='v0.20.1',SCHEMA=9;
+var VERSION='v0.21.0',SCHEMA=9;
 var ZONES0=[
  {id:'c1',name:'Camera 1',desc:'Ultima din video, după ușă: frigider, rafturi și multe flightcase-uri diferite.',x:10,y:10,w:320,h:170},
  {id:'c2',name:'Camera 2',desc:'A doua din video: sunet, rafturi și un birou.',x:10,y:190,w:320,h:150},
@@ -668,6 +668,10 @@ function itemDetail(id){
   else h+='<div>Total '+it.total+' · utilizabile '+usable(it)+' · defect '+(it.defect||0)+' · mentenanță '+(it.maint||0)+'</div>';
   h+=itemLabelsHtml(it);
   h+='<h3>Când nu este disponibil</h3>'+blockersHtml(it,today(),'9999-12-31');
+  var EV=S.events.filter(function(e){return (e.lines||[]).some(function(l){return l.item===it.id;});}).sort(function(a,b){return a.from<b.from?1:-1;});
+  if(EV.length){var td=today(),up=EV.filter(function(e){return e.to>=td;}).reverse(),past=EV.filter(function(e){return e.to<td;}).slice(0,5);
+    var ln=function(e){var q=0;e.lines.forEach(function(l){if(l.item===it.id)q+=l.qty;});return '<div class="row" style="padding:5px 0;border-bottom:1px solid var(--line);cursor:pointer" onclick="A.evView(\''+e.id+'\')"><div class="grow">'+esc(e.name)+'<div class="mut sm">'+fmtS(e.from)+(e.to!==e.from?' – '+fmtS(e.to):'')+'</div></div><span class="pill">'+q+' buc.</span></div>';};
+    h+='<h3>La evenimente</h3>'+(up.length?'<div class="mut sm">Urmează</div>'+up.map(ln).join(''):'')+(past.length?'<div class="mut sm" style="margin-top:6px">Ultimele</div>'+past.map(ln).join(''):'');}
   h+='<h3>Jurnal mentenanță</h3>'+(it.log.length?it.log.slice().reverse().map(function(l){return '<div class="card sm"><b>'+esc(l.type)+'</b> · '+fmt(l.date)+' · '+esc(l.who)+'<br>'+esc(l.text)+'</div>';}).join(''):'<div class="mut">Fără intrări.</div>');
   h+='<div class="row" style="margin-top:14px;flex-wrap:wrap">'+(canState(it)?'<button class="btn" onclick="A.stateForm(\''+id+'\')">Defect / mentenanță</button>':'')+'';
   if(canItems())h+='<button class="btn" onclick="A.photoPick(\''+id+'\',true)">📷 Adaugă poză</button><button class="btn" onclick="A.photoPick(\''+id+'\')">🖼️ Din galerie</button><button class="btn" onclick="A.photoUrl(\''+id+'\')">🔗 Din link</button>'+'<button class="btn" onclick="A.itemForm(\''+id+'\')">Editează</button><button class="btn danger" onclick="A.itemDel(\''+id+'\')">Șterge</button>';
