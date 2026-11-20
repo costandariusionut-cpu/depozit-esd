@@ -88,6 +88,13 @@ nav.bottom button.on{color:var(--acc);font-weight:700}
 #printarea[hidden]{display:none}
 @media print{html,body,body.printing{background:#fff!important;color-scheme:light!important}:root{color-scheme:light!important}body.printing #printarea{position:static!important;padding:0!important;overflow:visible!important}}
 #printarea .pa-doc{font:12px/1.35 system-ui,sans-serif;color:#000;max-width:190mm}#printarea .pa-doc h1{font-size:18px;margin:0 0 4px}#printarea .pa-doc table{width:100%;border-collapse:collapse;margin-top:8px}#printarea .pa-doc th,#printarea .pa-doc td{border:1px solid #999;padding:4px 6px;text-align:left;vertical-align:top}#printarea .pa-doc th{background:#eee}#printarea .pa-doc .bx{width:14px;height:14px;border:1.5px solid #000;display:inline-block}#printarea .pa-doc .dp{background:#f4f4f4;font-weight:700}
+#printarea .pv-doc .pv-h,.pv-doc .pv-h{display:flex;justify-content:space-between;border-bottom:2px solid #e8472b;padding-bottom:4px;margin-bottom:8px;font-size:.75rem}
+.pv-wrap{background:#fff;color:#000;border-radius:12px;padding:12px;overflow:hidden}
+.pv-doc{font:.8125rem/1.4 system-ui,sans-serif;color:#000}.pv-doc h1{font-size:1.05rem;margin:0 0 6px;letter-spacing:.3px}.pv-doc p{margin:8px 0}
+.pv-doc table{width:100%;border-collapse:collapse;margin-top:6px}.pv-doc th,.pv-doc td{border:1px solid #999;padding:4px 6px;text-align:left;vertical-align:top}.pv-doc th{background:#eee}
+.pv-sigs{display:flex;gap:14px;margin-top:14px}.pv-sig{flex:1;min-width:0}.pv-sl{font-size:.7rem;color:#555}.pv-sb{height:70px;border-bottom:1px solid #000;display:flex;align-items:flex-end;justify-content:center}.pv-sb img{max-height:68px;max-width:100%}.pv-mut{color:#666;font-size:.7rem}
+.pv-pad{display:block;width:100%;height:170px;background:#fff;border-radius:10px;border:2px dashed var(--line,#555);touch-action:none;cursor:crosshair}
+.pvp{max-width:720px;margin:0 auto;padding:16px 14px 40px}
 #printarea .pa-bar{display:flex;gap:8px;align-items:center;margin-bottom:12px}
 #printarea .pa-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:0}
 #printarea .pa-lb{display:flex;align-items:center;gap:6px;padding:6px;border:1px dashed #bbb;height:34mm;box-sizing:border-box;overflow:hidden;page-break-inside:avoid;break-inside:avoid}
@@ -200,7 +207,7 @@ var LOGOS='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAKAAAACgCAYAAACLz2ctAAA
 var PROFILES={sef:'Șef',depozit:'Responsabil depozit',resp:'Responsabil eveniment',tehnician:'Tehnician',admin:'Administrator'};
 var DEPTS=['Lumini','Sunet','Ecran','Scenă','Cabluri / Diverse'];
 var DCOL={'Lumini':'#d97706','Sunet':'#2563eb','Ecran':'#7c3aed','Scenă':'#059669','Cabluri / Diverse':'#64748b'};
-var NTYPES={rent:'Închirieri noi',eveniment:'Evenimente noi și modificate',prelungire:'Prelungiri',returnare:'Returnări',defect:'Defecte și mentenanță',reminder:'Remindere de retur',modificare:'Modificări făcute de colegi',echipa:'Când sunt pus la un eveniment',task:'Taskuri și mențiuni de la colegi',necesar:'Necesar (cereri noi și răspunsuri)'};
+var NTYPES={rent:'Închirieri noi',eveniment:'Evenimente noi și modificate',prelungire:'Prelungiri',returnare:'Returnări',defect:'Defecte și mentenanță',reminder:'Remindere de retur',modificare:'Modificări făcute de colegi',echipa:'Când sunt pus la un eveniment',task:'Taskuri și mențiuni de la colegi',necesar:'Necesar (cereri noi și răspunsuri)',pv:'Procese verbale (predări și semnături)'};
 var MONTHS=['Ianuarie','Februarie','Martie','Aprilie','Mai','Iunie','Iulie','August','Septembrie','Octombrie','Noiembrie','Decembrie'];
 var S=null;
 var UI={me:null,profile:null,tab:'inv',more:'',dept:'Toate',q:'',invDate:null,rsub:'who',rfilter:'active',calY:0,calM:0,calDay:null,payEv:null,pending:null,evFilter:'next',fails:0,lock:0,tmpPh:'',invState:'all'};
@@ -227,7 +234,7 @@ function accRes(r,okMsg){
 }
 function deny(){toast('Nu ai drept pentru această acțiune.',true);}
 function toast(m,bad){var t=document.createElement('div');t.textContent=m;if(bad)t.className='bad';$('toast').appendChild(t);setTimeout(function(){t.remove();},bad?4200:2400);}
-var VERSION='v0.21.0',SCHEMA=9;
+var VERSION='v0.22.0',SCHEMA=9;
 var ZONES0=[
  {id:'c1',name:'Camera 1',desc:'Ultima din video, după ușă: frigider, rafturi și multe flightcase-uri diferite.',x:10,y:10,w:320,h:170},
  {id:'c2',name:'Camera 2',desc:'A doua din video: sunet, rafturi și un birou.',x:10,y:190,w:320,h:150},
@@ -438,15 +445,15 @@ function load(){
   
   ACCS0.forEach(function(a){if((a.person==='p_8'||a.person==='p_9')&&!S.accounts.some(function(x){return x.id===a.id;}))S.accounts.push(cp(a));});
   STAGE0().forEach(function(it){if(!S.items.some(function(x){return x.id===it.id;}))S.items.push(it);});S.v=SCHEMA;}
-  if(!S.audit)S.audit=[];if(!S.notifs)S.notifs=[];if(!S.seen)S.seen={};if(!S.prefs)S.prefs={};if(!S.settings)S.settings={};if(!S.accounts)S.accounts=cp(ACCS0);if(!S.zones)S.zones=cp(ZONES0);if(!S.shelves)S.shelves=cp(SHELVES0);if(!S.payments)S.payments=[];if(!S.components)S.components=['Montaj','Tehnic','Demontat'];['tasks','tnotes','meetings','needs','labels','scans'].forEach(function(k){if(!Array.isArray(S[k]))S[k]=[];});if(!localStorage.getItem('esd-team-code')&&S.accounts.some(function(a){return a.role==='resp'||a.role==='depozit';})){S.accounts=cp(ACCS0);S.demoPw=0;}if(!S.demoPw&&!localStorage.getItem('esd-team-code')){S.accounts.forEach(function(a){a.h=pwHash('demo-'+a.role);});S.demoPw=1;}return;}}}catch(e){}
+  if(!S.audit)S.audit=[];if(!S.notifs)S.notifs=[];if(!S.seen)S.seen={};if(!S.prefs)S.prefs={};if(!S.settings)S.settings={};if(!S.accounts)S.accounts=cp(ACCS0);if(!S.zones)S.zones=cp(ZONES0);if(!S.shelves)S.shelves=cp(SHELVES0);if(!S.payments)S.payments=[];if(!S.components)S.components=['Montaj','Tehnic','Demontat'];['tasks','tnotes','meetings','needs','labels','scans','pvs'].forEach(function(k){if(!Array.isArray(S[k]))S[k]=[];});if(!localStorage.getItem('esd-team-code')&&S.accounts.some(function(a){return a.role==='resp'||a.role==='depozit';})){S.accounts=cp(ACCS0);S.demoPw=0;}if(!S.demoPw&&!localStorage.getItem('esd-team-code')){S.accounts.forEach(function(a){a.h=pwHash('demo-'+a.role);});S.demoPw=1;}return;}}}catch(e){}
   S=seed();
 }
 var DEPTH=0,DIRTY=false,LAST=null,T0=0;
-var COLL=[['items','Articol'],['events','Eveniment'],['rentals','Închiriere'],['clients','Client'],['persons','Persoană'],['payments','Plată'],['shelves','Element hartă'],['zones','Cameră'],['accounts','Cont'],['tasks','Task'],['meetings','Ședință'],['needs','Necesar'],['labels','Etichetă']];
+var COLL=[['items','Articol'],['events','Eveniment'],['rentals','Închiriere'],['clients','Client'],['persons','Persoană'],['payments','Plată'],['shelves','Element hartă'],['zones','Cameră'],['accounts','Cont'],['tasks','Task'],['meetings','Ședință'],['needs','Necesar'],['labels','Etichetă'],['pvs','Proces verbal']];
 var KLAB={title:'titlu',owner:'responsabil',due:'termen',status:'stare',until:'amânat până la',meeting:'ședință',qty:'cantitate',unit:'unitate',kind:'tip',prio:'prioritate',note:'notă',est:'cost estimat',stBy:'stare',stAt:'stare',people:'participanți',item:'articol',logi:'încărcare / descărcare',vans:'dube',created:'creat',createdBy:'creat de',doneAt:'finalizat',name:'nume',total:'cantitate',defect:'defecte',maint:'mentenanță',price:'preț',photo:'poză',nota:'notă',loc:'locație',log:'jurnal',units:'exemplare',outs:'perioade de indisponibilitate',from:'data de început',to:'data de sfârșit',resp:'responsabil',team:'echipă',notes:'note',lines:'echipament',returned:'returnat',hist:'istoric',phone:'telefon',func:'funcție',dept:'departament',sum:'sumă',paid:'plătit',paidOn:'data plății',type:'tip',n:'nume',x:'poziție',y:'poziție',w:'mărime',h:'mărime',z:'cameră',t:'tip',desc:'descriere',on:'activ',role:'rol',cat:'categorie',mode:'mod',client:'client',note:'notă',comp:'componentă',event:'eveniment',person:'persoană',createdBy:'creator',e:'raft',zoneGuess:'orientativ'};
 function snap(){var o={};COLL.forEach(function(c){o[c[0]]={};(S[c[0]]||[]).forEach(function(r){o[c[0]][r.id]=JSON.stringify(r);});});return o;}
 function recName(k,r){
-  if(k==='tasks'||k==='needs'||k==='meetings')return r.title||r.id;if(k==='labels')return r.id;
+  if(k==='tasks'||k==='needs'||k==='meetings')return r.title||r.id;if(k==='labels')return r.id;if(k==='pvs')return (r.no||r.id)+(r.toName?' → '+r.toName:'');
   if(k==='shelves')return r.n;if(k==='rentals')return 'către '+((client(r.client)||{}).name||'?');
   if(k==='payments')return pname(r.person)+' – '+r.comp;if(k==='accounts')return pname(r.person)+' ('+(PROFILES[r.role]||r.role)+')';
   return r.name||r.id;
@@ -759,6 +766,7 @@ function evDetail(id){
   var LG=LOGI.filter(function(k){return logiText(e,k[0]);});
   if(LG.length||(e.vans||[]).length)h+='<h3>Încărcare și descărcare</h3>'+LG.map(function(k){return '<div class="row" style="padding:2px 0"><div class="grow">'+k[1]+'</div><b>'+logiText(e,k[0])+'</b></div>';}).join('')+((e.vans||[]).length?'<div class="mut sm">Dube: '+e.vans.map(esc).join(', ')+'</div>':'');
   if(e.lines.length){var ls=loadSummary(e);h+='<button class="btn primary block" style="margin-top:10px" onclick="A.ldOpen(\''+id+'\')">📦 Încărcare / descărcare cu scanare'+(ls.got?' ('+ls.got+' / '+ls.tot+')':'')+'</button><button class="btn block" style="margin-top:8px" onclick="A.evPrint(\''+id+'\')">🖨️ Listă de încărcare (print / PDF)</button>';}
+  if(e.lines.length||pvsOf('event',id).length)h+='<h3>Predare echipament</h3>'+pvMini('event',id)+(canEvEdit(e)||P()==='depozit'?'<button class="btn block" style="margin-top:6px" onclick="A.pvNew(\'event\',\''+id+'\')">📝 Proces verbal de predare</button>':'');
   h+='<h3>Echipă</h3><div>'+(e.team.length?e.team.map(function(p){return '<span class="pill acc">'+esc(pname(p))+'</span>';}).join(''):'<span class="mut">Nimeni adăugat</span>')+'</div>';
   h+='<h3>Ce trebuie dus</h3>'+(e.lines.length?e.lines.map(function(l){var it=item(l.item);return '<div class="row" style="padding:4px 0"><div class="grow">'+esc(it?it.name:'(șters)')+'</div><b>'+l.qty+'</b></div>';}).join(''):'<div class="mut">Niciun echipament.</div>');
   if(e.notes)h+='<h3>Note</h3><div>'+esc(e.notes).replace(/\n/g,'<br>')+'</div>';
@@ -833,6 +841,7 @@ function rentList(){
     (r.note?'<div class="mut sm">Notă: '+esc(r.note)+'</div>':'');
     var b='';
     if(!r.returned&&(isSef()||P()==='depozit'||isAdmin()))b+='<button class="btn small" onclick="A.rRet(\''+r.id+'\')">Marchează returnat</button>';
+    if(isSef()||P()==='depozit'||isAdmin())b+='<button class="btn small" onclick="A.pvNew(\'rent\',\''+r.id+'\')">📝 PV predare'+(pvsOf('rent',r.id).length?' ('+pvsOf('rent',r.id).length+')':'')+'</button>';
     if(!r.returned&&isSef())b+='<button class="btn small" onclick="A.rExt(\''+r.id+'\')">Prelungește</button>';
     if(isSef())b+='<button class="btn small danger" onclick="A.rDel(\''+r.id+'\')">Șterge</button>';
     h+=(b?'<div class="row" style="margin-top:8px;flex-wrap:wrap">'+b+'</div>':'')+'</div>';
@@ -878,11 +887,12 @@ function moreView0(){
   if(m==='tasks')return tasksView();
   if(m==='needs')return needsView();
   if(m==='labels')return labelsView();
+  if(m==='pvs')return pvListView();
   var nT=myOpenTasks().length+myMentions().length,nN=(S.needs||[]).filter(function(n){return n.status==='cerut'||n.status==='aprobat';}).length;
   var h='<h2>Mai mult</h2>'+fsPicker()+'<div class="menu">'+
   '<button onclick="A.go(\'more\',\'tasks\')"><i>📋</i><span class="grow">Taskuri și ședințe</span>'+(nT?'<span class="pill acc">'+nT+'</span>':'')+'</button>'+
   '<button onclick="A.go(\'more\',\'needs\')"><i>🛒</i><span class="grow">Necesar</span>'+(nN?'<span class="pill">'+nN+'</span>':'')+'</button>'+
-  '<button onclick="A.go(\'more\',\'labels\')"><i>🏷️</i>Etichete QR</button>'+
+  '<button onclick="A.go(\'more\',\'labels\')"><i>🏷️</i>Etichete QR</button>'+'<button onclick="A.go(\'more\',\'pvs\')"><i>📝</i><span class="grow">Procese verbale</span>'+(function(){var n=pvs().filter(function(p){return !p.signedAt&&pvCan(p);}).length;return n?'<span class="pill warn">'+n+'</span>':'';})()+'</button>'+
   '<button onclick="A.go(\'more\',\'map\')"><i>🗺️</i>Harta depozitului</button>'+
   '<button onclick="A.go(\'more\',\'me\')"><i>🙂</i>Profilul meu</button>'+
   '<button onclick="A.go(\'more\',\'check\')"><i>📆</i>Verifică disponibilitatea</button>'+
@@ -1972,6 +1982,166 @@ var A2={
   logiSet:function(k,f,v){if(!EF.logi)EF.logi={};var x=EF.logi[k]||(EF.logi[k]={d:'',t:''});x[f]=v;if(!x.d&&!x.t)delete EF.logi[k];var w=$('ef-warn');if(w)w.innerHTML=busyWarn();var l=$('ef-lines');if(l)l.innerHTML=evLinesHtml();},
   efVan:function(v,on){if(!EF.vans)EF.vans=[];EF.vans=EF.vans.filter(function(x){return x!==v;});if(on)EF.vans.push(v);}
 };
+/* ---------- v0.22: procese verbale de predare-primire, semnate pe telefon sau prin link ---------- */
+function pvTok(){var C='ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789',r=new Uint8Array(24),s='';crypto.getRandomValues(r);for(var i=0;i<24;i++)s+=C[r[i]%C.length];return s;}
+function pvs(){if(!Array.isArray(S.pvs))S.pvs=[];return S.pvs;}
+function pvGet(id){return pvs().filter(function(x){return x.id===id;})[0];}
+function pvLink(pv){return location.origin+location.pathname+'?pv='+pv.token;}
+function pvCan(pv){return isSef()||isAdmin()||P()==='depozit'||pv.by===UI.me||pv.fromP===UI.me||pv.toP===UI.me;}
+function dtTxt(ms){if(!ms)return '';var d=new Date(ms);return pad(d.getDate())+'.'+pad(d.getMonth()+1)+'.'+d.getFullYear()+' '+pad(d.getHours())+':'+pad(d.getMinutes());}
+function pvPhone(pv){var ph='';if(pv.toP){var p=person(pv.toP);ph=p&&p.phone||'';}else if(pv.kind==='rent'){var r=(S.rentals||[]).filter(function(x){return x.id===pv.ref;})[0];var c=r&&client(r.client);ph=c&&c.phone||'';}
+  ph=String(ph).replace(/[^\d+]/g,'');if(/^0\d{9}$/.test(ph))ph='40'+ph.slice(1);return ph.replace(/^\+/,'').replace(/^00/,'');}
+function pvDocHtml(pv){
+  var L=pv.lines||[],tot=0;L.forEach(function(l){tot+=l.qty;});
+  var rows=L.map(function(l,i){return '<tr><td>'+(i+1)+'</td><td>'+esc(l.name)+'</td><td style="text-align:center"><b>'+l.qty+'</b></td></tr>';}).join('');
+  function sig(src,label,name,when){return '<div class="pv-sig"><div class="pv-sl">'+label+'</div><div class="pv-sb">'+(src?'<img alt="semnătură" src="'+esc(src)+'">':'')+'</div><div><b>'+(name?esc(name):'&nbsp;')+'</b></div>'+(when?'<div class="pv-mut">'+esc(when)+'</div>':'')+'</div>';}
+  return '<div class="pa-doc pv-doc"><div class="pv-h"><b>DEPOZIT ESD</b><span>'+esc(pv.no||'')+'</span></div><h1>PROCES VERBAL DE PREDARE-PRIMIRE</h1>'+
+    (pv.title?'<div><b>'+esc(pv.title)+'</b></div>':'')+
+    '<div>Data: <b>'+dtTxt(pv.at)+'</b>'+(pv.period?' · Perioada: '+esc(pv.period):'')+(pv.place?' · Loc: '+esc(pv.place):'')+'</div>'+
+    '<p><b>'+esc(pv.fromName||'')+'</b> predă, iar <b>'+esc(pv.toName||'____________________')+'</b> primește echipamentele de mai jos'+(pv.ret?', cu returnare până la <b>'+fmt(pv.ret)+'</b>':'')+', în stare de funcționare, cu observațiile notate.</p>'+
+    '<table><tr><th style="width:28px">#</th><th>Echipament</th><th style="width:50px">Buc.</th></tr>'+rows+'</table>'+
+    '<div style="margin-top:6px">Total: <b>'+tot+'</b> bucăți, '+L.length+' poziții.</div>'+
+    '<div style="margin-top:6px"><b>Observații:</b> '+(pv.note?esc(pv.note).replace(/\n/g,'<br>'):'fără')+'</div>'+
+    '<div class="pv-sigs">'+sig(pv.sigFrom,'Am predat',pv.fromName,dtTxt(pv.sigFromAt))+sig(pv.sigTo,'Am primit',pv.signedAt?pv.toName:'',pv.signedAt?dtTxt(pv.signedAt)+(pv.signedVia==='link'?' · semnat prin link':''):'')+'</div>'+
+    '<div class="pv-mut" style="margin-top:8px">Document generat de aplicația Depozit ESD.</div></div>';
+}
+function pvStatus(pv){return pv.signedAt?'<span class="pill ok">✓ Semnat</span>':'<span class="pill warn">De semnat</span>';}
+/* --- semnătura --- */
+function pvPadHtml(nameVal,withName){return (withName?'<label>Numele celui care primește</label><input id="pv-nm" autocomplete="name" placeholder="Nume și prenume" value="'+esc(nameVal||'')+'">':'')+
+  '<label>Semnează cu degetul în chenar</label><canvas id="pv-pad" class="pv-pad"></canvas><div class="row" style="margin-top:6px"><button class="btn small" onclick="A.pvPadClear()">Șterge semnătura</button></div>';}
+function padInit(){var c=$('pv-pad');if(!c||c.dataset.on)return;c.dataset.on='1';var b=c.getBoundingClientRect(),w=Math.max(200,b.width||300),h=Math.max(120,b.height||160),dpr=window.devicePixelRatio||1;
+  c.width=Math.round(w*dpr);c.height=Math.round(h*dpr);var x=c.getContext('2d');x.scale(dpr,dpr);x.fillStyle='#fff';x.fillRect(0,0,w,h);x.lineWidth=2.6;x.lineCap='round';x.lineJoin='round';x.strokeStyle='#111';
+  UI.padDrawn=false;var on=false,last=null;
+  function pt(e){var r=c.getBoundingClientRect();return [e.clientX-r.left,e.clientY-r.top];}
+  c.addEventListener('pointerdown',function(e){on=true;last=pt(e);try{c.setPointerCapture(e.pointerId);}catch(_){}x.beginPath();x.arc(last[0],last[1],1.3,0,7);x.fillStyle='#111';x.fill();UI.padDrawn=true;e.preventDefault();});
+  c.addEventListener('pointermove',function(e){if(!on)return;var p=pt(e);x.beginPath();x.moveTo(last[0],last[1]);x.lineTo(p[0],p[1]);x.stroke();last=p;UI.padDrawn=true;e.preventDefault();});
+  ['pointerup','pointercancel','pointerleave'].forEach(function(k){c.addEventListener(k,function(){on=false;});});}
+function padData(){var c=$('pv-pad');if(!c)return '';var o=document.createElement('canvas');o.width=600;o.height=Math.max(150,Math.round(600*c.height/Math.max(1,c.width)));var x=o.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,o.width,o.height);x.drawImage(c,0,0,o.width,o.height);return o.toDataURL('image/png');}
+/* --- formular --- */
+var PVF=null;
+function pvStart(kind,ref){
+  var f={kind:kind,ref:ref||'',title:'',period:'',place:'',ret:'',lines:[],fromP:UI.me,toP:'',toName:'',note:''};
+  if(kind==='event'){var e=evt(ref);if(!e)return null;f.title='Eveniment: '+e.name;f.period=fmt(e.from)+(e.to!==e.from?' – '+fmt(e.to):'');f.place=e.loc||'';f.ret=e.to;if(e.resp&&e.resp!==UI.me)f.toP=e.resp;
+    f.lines=(e.lines||[]).map(function(l){var it=item(l.item);return it?{item:it.id,name:it.name,qty:l.qty}:null;}).filter(Boolean);}
+  else if(kind==='rent'){var r=(S.rentals||[]).filter(function(x){return x.id===ref;})[0];if(!r)return null;var c=client(r.client);f.title='Închiriere: '+(c?c.name:'client');f.period=fmt(r.from)+' – '+fmt(r.to);f.ret=r.to;f.toName=c?c.name:'';
+    f.lines=(r.lines||[]).map(function(l){var it=item(l.item);return it?{item:it.id,name:it.name,qty:l.qty}:null;}).filter(Boolean);}
+  return f;
+}
+function pvFormHtml(){var f=PVF;var ppl=(S.persons||[]).slice().sort(function(a,b){return a.name.localeCompare(b.name,'ro');});
+  function opts(sel,extra){return extra+ppl.map(function(p){return '<option value="'+esc(p.id)+'"'+(p.id===sel?' selected':'')+'>'+esc(p.name)+'</option>';}).join('');}
+  var h='<label>Pentru ce</label><input id="pvf-t" value="'+esc(f.title)+'" placeholder="ex: Eveniment Untold, scena 2" oninput="A.pvf(\'title\',this.value)">'+
+  '<div class="row"><div class="grow"><label>Predă</label><select onchange="A.pvf(\'fromP\',this.value)">'+opts(f.fromP,'')+'</select></div>'+
+  '<div class="grow"><label>Primește</label><select id="pvf-to" onchange="A.pvf(\'toP\',this.value,1)">'+opts(f.toP,'<option value=""'+(f.toP?'':' selected')+'>Altcineva (client, colaborator)</option>')+'</select></div></div>'+
+  (f.toP?'':'<label>Numele celui care primește</label><input id="pvf-tn" value="'+esc(f.toName)+'" placeholder="Nume și prenume / firmă" oninput="A.pvf(\'toName\',this.value)">')+
+  '<label>Returnare până la (opțional)</label><input type="date" value="'+esc(f.ret)+'" onchange="A.pvf(\'ret\',this.value)">'+
+  '<h3>Echipament ('+f.lines.length+')</h3><div id="pvf-lines">'+(f.lines.length?f.lines.map(function(l,i){return '<div class="row" style="padding:3px 0"><div class="grow">'+esc(l.name)+'</div><input type="number" min="1" inputmode="numeric" style="width:70px" value="'+l.qty+'" onchange="A.pvfQ('+i+',this.value)"><button class="btn small" aria-label="Scoate" onclick="A.pvfDel('+i+')">✕</button></div>';}).join(''):'<div class="mut">Niciun echipament. Adaugă din listă.</div>')+'</div>'+
+  '<select onchange="A.pvfAdd(this.value)"><option value="">+ Adaugă echipament…</option>'+(S.items||[]).slice().sort(function(a,b){return a.name.localeCompare(b.name,'ro');}).map(function(it){return '<option value="'+esc(it.id)+'">'+esc(it.name)+'</option>';}).join('')+'</select>'+
+  '<label>Observații (starea echipamentului, accesorii, lipsuri)</label><textarea rows="3" oninput="A.pvf(\'note\',this.value)">'+esc(f.note)+'</textarea>'+
+  '<button class="btn primary block" style="margin-top:12px" onclick="A.pvSave()">📝 Creează procesul verbal</button>';
+  return h;}
+function pvFormOpen(){openModal('Proces verbal nou',pvFormHtml());}
+/* --- vizualizare --- */
+function pvViewHtml(pv){
+  var h='<div class="row" style="margin-bottom:8px">'+pvStatus(pv)+'<span class="mut sm grow" style="text-align:right">'+esc(pv.no||'')+'</span></div><div class="pv-wrap">'+pvDocHtml(pv)+'</div>';
+  var mine=pvCan(pv);
+  if(!pv.signedAt){
+    if(!pv.sigFrom&&(pv.fromP===UI.me||isSef()||isAdmin()))h+='<button class="btn block" style="margin-top:10px" onclick="A.pvSig(\''+pv.id+'\',\'from\')">✍️ Semnez că predau ('+esc(pv.fromName)+')</button>';
+    if(mine||pv.toP===UI.me)h+='<button class="btn primary block" style="margin-top:8px" onclick="A.pvSig(\''+pv.id+'\',\'to\')">✍️ Semnează aici, pe acest telefon (cine primește)</button>';
+    if(mine)h+='<h3>Sau trimite-i linkul de semnare</h3><div class="mut sm">Îl deschide pe telefonul lui, fără cont și fără aplicație, și semnează cu degetul. Primești notificare când a semnat.</div>'+pvShareBtns(pv);
+  }else{
+    h+='<h3>Copia pentru '+esc(pv.toName||'')+'</h3><div class="mut sm">Linkul arată procesul verbal semnat și se poate salva ca PDF. Trimite-l ca să aibă copia lui.</div>'+pvShareBtns(pv);
+  }
+  h+='<div class="row" style="margin-top:10px;flex-wrap:wrap"><button class="btn" onclick="A.pvPrint(\''+pv.id+'\')">🖨️ Print / PDF</button>'+
+    ((!pv.signedAt&&mine)||isSef()||isAdmin()?'<button class="btn danger" onclick="A.pvDel(\''+pv.id+'\')">Șterge</button>':'')+'</div>';
+  if(!CLOUD.ready)h+='<div class="mut sm" style="margin-top:8px">Semnarea prin link merge doar cu datele comune (online). Aici poți semna direct pe telefon.</div>';
+  return h;}
+function pvShareBtns(pv){return '<div class="row" style="margin-top:6px;flex-wrap:wrap"><button class="btn" onclick="A.pvWa(\''+pv.id+'\')">💬 WhatsApp</button><button class="btn" onclick="A.pvShare(\''+pv.id+'\')">📤 Trimite…</button><button class="btn" onclick="A.pvCopy(\''+pv.id+'\')">🔗 Copiază linkul</button></div>';}
+function pvMsg(pv){return pv.signedAt?'Copia procesului verbal de predare-primire ('+(pv.title||pv.no)+'), semnat: '+pvLink(pv):'Salut! Te rog semnează procesul verbal de predare-primire pentru '+(pv.title||'echipament')+'. Se deschide pe telefon, semnezi cu degetul: '+pvLink(pv);}
+function pvListView(){
+  UI.pvTab=UI.pvTab||'open';
+  var all=pvs().slice().sort(function(a,b){return (b.at||0)-(a.at||0);});
+  var L=all.filter(function(p){return UI.pvTab==='open'?!p.signedAt:!!p.signedAt;});
+  var h='<div class="row"><button class="btn small" onclick="A.go(\'more\')">‹ Înapoi</button><h2 class="grow" style="margin:0">Procese verbale</h2></div>'+
+    '<button class="btn primary block" style="margin:10px 0" onclick="A.pvNew(\'free\',\'\')">📝 Proces verbal nou</button>'+
+    '<div class="seg"><div class="chip '+(UI.pvTab==='open'?'on':'')+'" onclick="A.pvTab(\'open\')">De semnat ('+all.filter(function(p){return !p.signedAt;}).length+')</div><div class="chip '+(UI.pvTab==='done'?'on':'')+'" onclick="A.pvTab(\'done\')">Semnate</div></div>';
+  if(!L.length)return h+'<div class="card mut">Nimic aici. Un proces verbal se face și din eveniment sau din închiriere.</div>';
+  return h+L.map(function(p){var n=0;(p.lines||[]).forEach(function(l){n+=l.qty;});return '<div class="card" style="cursor:pointer" onclick="A.pvView(\''+p.id+'\')"><div class="row top"><div class="grow"><b>'+esc(p.title||p.no)+'</b><div class="mut sm">'+esc(p.fromName)+' → '+esc(p.toName||'?')+' · '+n+' buc. · '+dtTxt(p.at)+'</div></div>'+pvStatus(p)+'</div></div>';}).join('');}
+function pvsOf(kind,ref){return pvs().filter(function(p){return p.kind===kind&&p.ref===ref;});}
+function pvMini(kind,ref){var L=pvsOf(kind,ref);return L.map(function(p){return '<div class="row" style="padding:3px 0;cursor:pointer" onclick="A.pvView(\''+p.id+'\')"><div class="grow sm">📝 '+esc(p.toName||'?')+' · '+dtTxt(p.at)+'</div>'+pvStatus(p)+'</div>';}).join('');}
+/* --- pagina publică (?pv=…) --- */
+var PVTOK=(function(){try{var m=/[?&]pv=([A-Za-z0-9]{20,64})/.exec(location.search);return m?m[1]:'';}catch(e){return '';}})();
+var PVP={st:'load',pv:null,err:'',key:''};
+function pvPublicView(){
+  var h='<div id="pvp" class="pvp"><div class="row" style="align-items:center;gap:10px;margin-bottom:12px"><img src="'+LOGOS+'" alt="ESD" style="width:44px;height:44px;border-radius:12px"><div class="grow"><b>Depozit ESD</b><div class="mut sm">Proces verbal de predare-primire</div></div>'+(UI.profile?'<button class="btn small" onclick="A.pvExit()">Aplicația ›</button>':'')+'</div>';
+  if(PVP.st==='load')return h+'<div class="card mut">Se încarcă…</div></div>';
+  if(PVP.st==='err')return h+'<div class="card">'+esc(PVP.err)+'</div><button class="btn block" onclick="A.pvReload()">Încearcă din nou</button></div>';
+  var pv=PVP.pv;
+  h+='<div class="pv-wrap">'+pvDocHtml(pv)+'</div>';
+  if(!pv.signedAt){
+    h+='<div class="card" style="margin-top:12px"><b>Semnează ca primitor</b>'+pvPadHtml(pv.toName,true)+'<div class="mut sm" style="margin-top:6px">Semnând, confirmi că ai primit echipamentul de mai sus, cu observațiile notate.</div><button class="btn primary block" style="margin-top:10px" id="pvp-go" onclick="A.pvPubSign()">✍️ Semnez</button></div>';
+  }else{
+    h+='<div class="card" style="margin-top:12px"><b style="color:var(--ok)">✓ Semnat '+esc(dtTxt(pv.signedAt))+'</b><div class="mut sm" style="margin-top:4px">Păstrează acest link: e copia ta. O poți salva și ca PDF.</div><div class="row" style="margin-top:8px;flex-wrap:wrap"><button class="btn primary" onclick="A.pvPubPrint()">🖨️ Salvează PDF / Print</button><button class="btn" onclick="A.pvPubShare()">📤 Trimite / salvează linkul</button></div></div>';
+  }
+  return h+'</div>';
+}
+function pvPublicLoad(){PVP.st='load';render();CLOUD.pvRpc('esd_pv_get',{p_token:PVTOK}).then(function(r){
+  if(r.ok&&r.data&&typeof r.data==='object'){PVP.pv=r.data;PVP.st='ok';}else{PVP.st='err';PVP.err=r.ok?'Procesul verbal nu există sau a fost șters.':'Nu se poate încărca. Verifică internetul și încearcă din nou.';}
+  PVP.key='';render();});}
+(function(){var r1=render;render=function(){
+  if(!PVTOK){r1();return;}
+  var key=PVP.st+'|'+(PVP.pv&&PVP.pv.signedAt||'')+'|'+(UI.profile?1:0);
+  if(key===PVP.key&&$('pvp'))return;PVP.key=key;applyFs();$('app').innerHTML=pvPublicView();setTimeout(padInit,0);};})();
+var A3={
+  pvNew:function(kind,ref){var f=kind==='free'?pvStart('free'):pvStart(kind,ref);if(!f){toast('Nu găsesc evenimentul / închirierea.',true);return;}PVF=f;pvFormOpen();},
+  pvf:function(k,v,refresh){if(!PVF)return;PVF[k]=v;if(k==='toP'){PVF.toName=v?pname(v):'';}if(refresh)pvFormOpen();},
+  pvfQ:function(i,v){if(!PVF||!PVF.lines[i])return;var n=Math.round(Number(v));if(!(n>=1)){toast('Cantitate invalidă.',true);pvFormOpen();return;}PVF.lines[i].qty=Math.min(n,100000);},
+  pvfDel:function(i){if(!PVF)return;PVF.lines.splice(i,1);pvFormOpen();},
+  pvfAdd:function(id){if(!PVF||!id)return;var it=item(id);if(!it)return;var ex=PVF.lines.filter(function(l){return l.item===id;})[0];if(ex)ex.qty++;else PVF.lines.push({item:id,name:it.name,qty:1});pvFormOpen();},
+  pvSave:function(){var f=PVF;if(!f)return;var tn=f.toP?pname(f.toP):String(f.toName||'').trim();
+    if(!f.lines.length){toast('Adaugă cel puțin un echipament.',true);return;}
+    if(tn.length<3){toast('Scrie numele celui care primește.',true);return;}
+    if(f.toP&&f.toP===f.fromP){toast('Cine predă și cine primește nu pot fi aceeași persoană.',true);return;}
+    var d=new Date(),no='PV-'+String(d.getFullYear()).slice(2)+pad(d.getMonth()+1)+pad(d.getDate())+'-'+pvTok().slice(0,4).toUpperCase();
+    var pv={id:uid('pv'),no:no,token:pvTok(),kind:f.kind,ref:f.ref,title:String(f.title||'').trim().slice(0,200),period:f.period,place:f.place,ret:validDate(f.ret)?f.ret:'',
+      lines:f.lines.map(function(l){return {item:l.item,name:l.name,qty:l.qty};}),fromP:f.fromP,fromName:pname(f.fromP),toP:f.toP||'',toName:tn,note:String(f.note||'').trim().slice(0,2000),
+      at:Date.now(),by:UI.me,sigFrom:null,sigFromAt:null,sigTo:null,signedAt:null};
+    pvs().unshift(pv);
+    if(pv.toP&&pv.toP!==UI.me)notifyP('pv',[pv.toP],'📝 '+pname(UI.me)+' ți-a predat echipament ('+(pv.title||pv.no)+'). Deschide procesul verbal și semnează.');
+    PVF=null;save();A3.pvView(pv.id);toast('Proces verbal creat. Semnează sau trimite linkul.');},
+  pvView:function(id){var pv=pvGet(id);if(!pv){toast('Procesul verbal nu mai există.',true);return;}openModal('Proces verbal',pvViewHtml(pv));},
+  pvTab:function(t){UI.pvTab=t;render();},
+  pvSig:function(id,who){var pv=pvGet(id);if(!pv||pv.signedAt){toast('E deja semnat.',true);return;}
+    openModal(who==='to'?'Semnătura celui care primește':'Semnătura celui care predă','<div class="mut sm">'+esc(pv.title||pv.no)+'</div>'+pvPadHtml(who==='to'?pv.toName:pv.fromName,who==='to')+
+      '<button class="btn primary block" style="margin-top:10px" onclick="A.pvSigOk(\''+id+'\',\''+who+'\')">Salvează semnătura</button><button class="btn block" style="margin-top:6px" onclick="A.pvView(\''+id+'\')">Renunță</button>');setTimeout(padInit,30);},
+  pvPadClear:function(){var c=$('pv-pad');if(!c)return;delete c.dataset.on;padInit();},
+  pvSigOk:function(id,who){var pv=pvGet(id);if(!pv||pv.signedAt){toast('E deja semnat.',true);return;}
+    if(!UI.padDrawn){toast('Semnează în chenar.',true);return;}
+    if(who==='to'){var nm=(($('pv-nm')||{}).value||'').trim();if(nm.length<3){toast('Scrie numele celui care primește.',true);return;}pv.toName=nm;pv.sigTo=padData();pv.signedAt=Date.now();pv.signedVia='app';
+      var to=[pv.by,pv.fromP].filter(function(x){return x&&x!==UI.me;});if(to.length)notifyP('pv',to,'✍️ '+nm+' a semnat procesul verbal: '+(pv.title||pv.no));}
+    else{pv.sigFrom=padData();pv.sigFromAt=Date.now();}
+    save();A3.pvView(id);toast('✓ Semnătura e salvată.');},
+  pvDel:function(id){var pv=pvGet(id);if(!pv)return;if(pv.signedAt?!(isSef()||isAdmin()):!pvCan(pv)){deny();return;}
+    confirmBox('Ștergi procesul verbal '+(pv.no||'')+'? Linkul trimis nu va mai funcționa.',function(){S.pvs=pvs().filter(function(x){return x.id!==id;});save();closeModal();render();},'Șterge');},
+  pvWa:function(id){var pv=pvGet(id);if(!pv)return;var ph=pvPhone(pv);window.open('https://wa.me/'+(ph||'')+'?text='+encodeURIComponent(pvMsg(pv)),'_blank','noopener');},
+  pvShare:function(id){var pv=pvGet(id);if(!pv)return;if(navigator.share){navigator.share({title:'Proces verbal '+(pv.no||''),text:pvMsg(pv)}).catch(function(){});}else A3.pvCopy(id);},
+  pvCopy:function(id){var pv=pvGet(id);if(!pv)return;var t=pvLink(pv);try{navigator.clipboard.writeText(t).then(function(){toast('✓ Linkul e copiat.');},function(){toast(t);});}catch(e){toast(t);}},
+  pvPrint:function(id){var pv=pvGet(id);if(!pv)return;closeModal();var box=$('printarea');if(!box){box=document.createElement('div');box.id='printarea';document.body.appendChild(box);}
+    box.innerHTML='<div class="pa-bar"><button class="btn primary" onclick="window.print()">🖨️ Printează / Salvează PDF</button><button class="btn" onclick="A.printClose()">Închide</button></div>'+pvDocHtml(pv);box.hidden=false;document.body.classList.add('printing');},
+  pvExit:function(){PVTOK='';try{history.replaceState(null,'',location.pathname);}catch(e){}render();},
+  pvReload:function(){pvPublicLoad();},
+  pvPubSign:function(){var pv=PVP.pv;if(!pv||pv.signedAt)return;var nm=(($('pv-nm')||{}).value||'').trim();
+    if(nm.length<3){toast('Scrie numele tău (nume și prenume).',true);return;}if(!UI.padDrawn){toast('Semnează în chenar.',true);return;}
+    var b=$('pvp-go');if(b){b.disabled=true;b.textContent='Se trimite…';}
+    CLOUD.pvRpc('esd_pv_sign',{p_token:PVTOK,p_name:nm,p_sig:padData()}).then(function(r){
+      if(r.ok&&r.data&&r.data.ok){toast('✓ Mulțumim! Procesul verbal e semnat.');pvPublicLoad();return;}
+      var w=r.data&&r.data.why;toast(w==='done'?'Procesul verbal era deja semnat.':w==='name'?'Scrie numele complet.':w==='sig'?'Semnătura nu e validă, încearcă din nou.':w==='token'?'Linkul nu mai e valabil.':'Nu s-a putut trimite. Verifică internetul și încearcă din nou.',true);
+      if(w==='done'){pvPublicLoad();return;}if(b){b.disabled=false;b.textContent='✍️ Semnez';}});},
+  pvPubPrint:function(){if(!PVP.pv)return;var box=$('printarea');if(!box){box=document.createElement('div');box.id='printarea';document.body.appendChild(box);}
+    box.innerHTML='<div class="pa-bar"><button class="btn primary" onclick="window.print()">🖨️ Printează / Salvează PDF</button><button class="btn" onclick="A.printClose()">Închide</button></div>'+pvDocHtml(PVP.pv);box.hidden=false;document.body.classList.add('printing');},
+  pvPubShare:function(){var u=location.href;if(navigator.share){navigator.share({title:'Proces verbal Depozit ESD',url:u}).catch(function(){});}else{try{navigator.clipboard.writeText(u);toast('✓ Linkul e copiat.');}catch(e){toast(u);}}}
+};
+Object.keys(A3).forEach(function(k){A2[k]=A3[k];});
+if(PVTOK)setTimeout(pvPublicLoad,0);
 Object.keys(A2).forEach(function(k){A[k]=A2[k];});
 
 window.A=A;
@@ -1988,8 +2158,8 @@ var CLOUD=(function(){
   var LIB_SRI='sha384-gnyZit14c5lnGcarmA166QQjjJXpucw25ogZXuwH3HxxY904zHkBqmxVpelsPorb';
   var CODEK='esd-team-code',SYNCK='esd-synced-v1',PULLK='esd-lastpull-v1',SESSK='esd-sess-v1',PEOPLEK='esd-people-v1',OFFK='esd-off-v1';
   var SERVER_ONLY={accounts:1},INSERT_ONLY={audit:1,notifs:1};
-  var ARR=['items','events','rentals','clients','persons','payments','shelves','zones','accounts','audit','notifs','tasks','tnotes','meetings','needs','labels','scans'];
-  var COLS={tasks:1,tnotes:1,meetings:1,needs:1,labels:1,scans:1,items:1,events:1,rentals:1,clients:1,persons:1,payments:1,shelves:1,zones:1,accounts:1,audit:1,notifs:1,seen:1,prefs:1,meta:1};
+  var ARR=['items','events','rentals','clients','persons','payments','shelves','zones','accounts','audit','notifs','tasks','tnotes','meetings','needs','labels','scans','pvs'];
+  var COLS={pvs:1,tasks:1,tnotes:1,meetings:1,needs:1,labels:1,scans:1,items:1,events:1,rentals:1,clients:1,persons:1,payments:1,shelves:1,zones:1,accounts:1,audit:1,notifs:1,seen:1,prefs:1,meta:1};
   var T=(window.__ESD_DEV?window.__ESD_TEST:null)||null;
   var sb=null,ch=null,ready=false,busy=false,again=false,started=false,connecting=false,reconciling=false;
   var pushT=null,renderT=null,retryT=null,SYNCED={},lastPull='',status='local',lastErr='',actor=null,authHooked=false,KEEP=null;
@@ -2030,6 +2200,7 @@ var CLOUD=(function(){
     if(c==='meetings')return DRE.test(d.date)&&Array.isArray(d.people)&&d.people.every(str);
     if(c==='needs')return str(d.title)&&!!d.title&&!!NKIND[d.kind]&&!!NSTAT[d.status]&&num(d.at)&&(d.qty==null||num(d.qty));
     if(c==='labels')return /^ESD-\d{5}$/.test(row.id)&&str(d.item)&&(d.unit==null||str(d.unit));
+    if(c==='pvs')return str(d.token)&&/^[A-Za-z0-9]{20,64}$/.test(d.token)&&Array.isArray(d.lines)&&d.lines.every(function(l){return l&&str(l.name)&&num(l.qty);})&&num(d.at)&&photoOk(d.sigTo)&&photoOk(d.sigFrom);
     if(c==='scans')return str(d.event)&&(d.dir==='out'||d.dir==='in')&&str(d.item)&&num(d.qty)&&d.qty>=1&&str(d.van);
     if(c==='rentals')return str(d.client)&&DRE.test(d.from)&&DRE.test(d.to)&&d.to>=d.from&&linesOk(d.lines,true)&&typeof d.returned==='boolean'&&Array.isArray(d.hist);
     if(c==='payments')return str(d.event)&&str(d.person)&&str(d.comp)&&num(d.sum)&&d.sum>=0&&typeof d.paid==='boolean'&&(!d.paidOn||DRE.test(d.paidOn));
@@ -2436,6 +2607,7 @@ var CLOUD=(function(){
     adminPassword:function(acc,pw){return admin('esd_admin_password',{p_account:acc,p_secret:secret(pw)});},
     adminEnable:function(acc,on){return admin('esd_admin_enable',{p_account:acc,p_on:on});},
     adminDelete:function(acc){return admin('esd_admin_delete',{p_account:acc});},
+    pvRpc:async function(fn,args){if(window.__ESD_DEV&&window.__ESD_PVRPC)return window.__ESD_PVRPC(fn,args);try{var r=await fetch(URL_+'/rest/v1/rpc/'+fn,{method:'POST',headers:{'apikey':KEYP,'Authorization':'Bearer '+KEYP,'Content-Type':'application/json'},body:JSON.stringify(args)});if(!r.ok)return {ok:false,status:r.status};return {ok:true,data:await r.json()};}catch(e){return {ok:false,why:'net'};}},
     get session(){return sess();},
     get status(){return status;},get ready(){return ready;},get synced(){return SYNCED;},canon:canon,hs:hs};
 })();
