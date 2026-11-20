@@ -234,7 +234,7 @@ function accRes(r,okMsg){
 }
 function deny(){toast('Nu ai drept pentru această acțiune.',true);}
 function toast(m,bad){var t=document.createElement('div');t.textContent=m;if(bad)t.className='bad';$('toast').appendChild(t);setTimeout(function(){t.remove();},bad?4200:2400);}
-var VERSION='v0.24.0',SCHEMA=9;
+var VERSION='v0.25.0',SCHEMA=9;
 var ZONES0=[
  {id:'c1',name:'Camera 1',desc:'Ultima din video, după ușă: frigider, rafturi și multe flightcase-uri diferite.',x:10,y:10,w:320,h:170},
  {id:'c2',name:'Camera 2',desc:'A doua din video: sunet, rafturi și un birou.',x:10,y:190,w:320,h:150},
@@ -662,6 +662,7 @@ function invList(){
   });
   return out;
 }
+function canItemEdit(it){return canItems()||(P()==='tehnician'&&!!myDept()&&!!it&&it.dept===myDept());}
 function itemDetail(id){
   var it=item(id);if(!it)return;
   var d=UI.invDate||today();var h='<div class="row top">'+pimg(it,'width:90px;height:90px','thumb')+'<div class="grow"><b style="font-size:1.1875rem">'+esc(it.name)+'</b><div class="mut">'+esc(it.dept)+' · '+esc(it.cat)+'</div>'+(isSef()?'<div class="mut">Preț rent: '+money(it.price)+' / zi</div>':'')+'</div></div>';
@@ -682,6 +683,7 @@ function itemDetail(id){
   h+='<h3>Jurnal mentenanță</h3>'+(it.log.length?it.log.slice().reverse().map(function(l){return '<div class="card sm"><b>'+esc(l.type)+'</b> · '+fmt(l.date)+' · '+esc(l.who)+'<br>'+esc(l.text)+'</div>';}).join(''):'<div class="mut">Fără intrări.</div>');
   h+='<div class="row" style="margin-top:14px;flex-wrap:wrap">'+(canState(it)?'<button class="btn" onclick="A.stateForm(\''+id+'\')">Defect / mentenanță</button>':'')+'';
   if(canItems())h+='<button class="btn" onclick="A.photoPick(\''+id+'\',true)">📷 Adaugă poză</button><button class="btn" onclick="A.photoPick(\''+id+'\')">🖼️ Din galerie</button><button class="btn" onclick="A.photoUrl(\''+id+'\')">🔗 Din link</button>'+'<button class="btn" onclick="A.itemForm(\''+id+'\')">Editează</button><button class="btn danger" onclick="A.itemDel(\''+id+'\')">Șterge</button>';
+  else if(canItemEdit(it))h+='<button class="btn" onclick="A.photoPick(\''+id+'\',true)">📷 Adaugă poză</button><button class="btn" onclick="A.photoPick(\''+id+'\')">🖼️ Din galerie</button><button class="btn" onclick="A.itemRename(\''+id+'\')">✏️ Schimbă numele</button>';
   h+='</div>';
   openModal('Articol',h);
 }
@@ -1191,7 +1193,7 @@ var A={
     box.hidden=false;document.body.classList.add('printing');},
   ifPhoto:function(cam){if(!canItems()){deny();return;}pickImage(cam,function(d){UI.ifPh=d;var b=$('if-ph');if(b)b.innerHTML=ifPhBox(null);toast('Poză pregătită. Apasă „Salvează”.');});},
   photoPick:function(id,cam){
-    if(!canItems()){deny();return;}var inp=document.createElement('input');inp.type='file';inp.accept='image/*';if(cam)inp.setAttribute('capture','environment');
+    if(!canItemEdit(item(id))){deny();return;}var inp=document.createElement('input');inp.type='file';inp.accept='image/*';if(cam)inp.setAttribute('capture','environment');
     inp.onchange=function(){var f=inp.files[0];if(!f)return;
       if(!/^image\//.test(f.type)){toast('Alege o imagine.',true);return;}
       var rd=new FileReader();rd.onload=function(){var im=new Image();im.onload=function(){var s=Math.min(1,240/Math.max(im.width,im.height));var c=document.createElement('canvas');c.width=Math.round(im.width*s);c.height=Math.round(im.height*s);c.getContext('2d').drawImage(im,0,0,c.width,c.height);
@@ -1201,17 +1203,19 @@ var A={
     inp.click();
   },
   imgErr:function(el){var t=parseInt(el.getAttribute('data-t'),10);if(t>=0&&t<EXTS.length-1){t++;el.setAttribute('data-t',t);el.src='poze/'+el.getAttribute('data-s')+'.'+EXTS[t];return;}var r=el.getAttribute('data-r');if(t>=0&&r&&el.getAttribute('data-rt')!=='1'){el.setAttribute('data-rt','1');el.src=r;return;}el.onerror=null;el.src=ph(el.getAttribute('data-n'),el.getAttribute('data-d'),el.getAttribute('data-c'));},
-  photoUrl:function(id){if(!canItems()){deny();return;}var it=item(id);if(!it)return;openModal('Poză din link','<div class="mut sm">Pe site-ul producătorului: click dreapta pe poză → „Copiază adresa imaginii”, apoi lipește mai jos. Merge doar când ai internet; dacă linkul nu mai funcționează, apare imaginea generică.</div><label>Adresa imaginii (https://…)</label><input id="pu-u" inputmode="url" maxlength="600" placeholder="https://…" value="'+esc(/^https?:/.test(it.photo||"")?it.photo:"")+'"><button class="btn primary block" style="margin-top:12px" onclick="A.photoUrlSave(\''+id+'\')">Salvează</button>');},
-  photoUrlSave:function(id){if(!canItems()){deny();return;}var it=item(id);if(!it)return;var u=$('pu-u').value.trim();if(!/^https:\/\/[^\s"'<>]+$/.test(u)){toast('Adresa trebuie să înceapă cu https:// și să nu conțină spații.',true);return;}var P=photosOf(it);if(P.length>=12){toast('Maxim 12 poze pe articol.',true);return;}setPhotos(it,P.concat([u]));save();closeModal();toast('Poză adăugată din link.');render();},
-  photoDel:function(id){if(!canItems()){deny();return;}if(!item(id))return;confirmBox('Elimini toate pozele articolului?',function(){var it=item(id);if(!it)return;setPhotos(it,[]);save();toast('Poze eliminate.');render();},'Elimină');},
+  photoUrl:function(id){if(!canItemEdit(item(id))){deny();return;}var it=item(id);if(!it)return;openModal('Poză din link','<div class="mut sm">Pe site-ul producătorului: click dreapta pe poză → „Copiază adresa imaginii”, apoi lipește mai jos. Merge doar când ai internet; dacă linkul nu mai funcționează, apare imaginea generică.</div><label>Adresa imaginii (https://…)</label><input id="pu-u" inputmode="url" maxlength="600" placeholder="https://…" value="'+esc(/^https?:/.test(it.photo||"")?it.photo:"")+'"><button class="btn primary block" style="margin-top:12px" onclick="A.photoUrlSave(\''+id+'\')">Salvează</button>');},
+  photoUrlSave:function(id){if(!canItemEdit(item(id))){deny();return;}var it=item(id);if(!it)return;var u=$('pu-u').value.trim();if(!/^https:\/\/[^\s"'<>]+$/.test(u)){toast('Adresa trebuie să înceapă cu https:// și să nu conțină spații.',true);return;}var P=photosOf(it);if(P.length>=12){toast('Maxim 12 poze pe articol.',true);return;}setPhotos(it,P.concat([u]));save();closeModal();toast('Poză adăugată din link.');render();},
+  photoDel:function(id){if(!canItemEdit(item(id))){deny();return;}if(!item(id))return;confirmBox('Elimini toate pozele articolului?',function(){var it=item(id);if(!it)return;setPhotos(it,[]);save();toast('Poze eliminate.');render();},'Elimină');},
   phView:function(id,i){var it=item(id);if(!it)return;var P=photosOf(it);if(!P.length)return;i=((i%P.length)+P.length)%P.length;
     var h='<img src="'+esc(P[i])+'" alt="" style="width:100%;max-height:62vh;object-fit:contain;border-radius:12px;background:#000;display:block">'+
     '<div class="row" style="align-items:center;margin-top:10px"><button class="btn" onclick="A.phView(\''+id+'\','+(i-1)+')" '+(P.length<2?'disabled':'')+'>‹</button><div class="grow" style="text-align:center">'+(i+1)+' / '+P.length+(i===0?' · principală':'')+'</div><button class="btn" onclick="A.phView(\''+id+'\','+(i+1)+')" '+(P.length<2?'disabled':'')+'>›</button></div>'+
-    (canItems()?'<div class="row" style="gap:8px;margin-top:10px;flex-wrap:wrap">'+(i>0?'<button class="btn small" onclick="A.phMain(\''+id+'\','+i+')">⭐ Fă-o principală</button>':'')+'<button class="btn small danger" onclick="A.phDel(\''+id+'\','+i+')">Șterge poza</button></div>':'')+
+    (canItemEdit(it)?'<div class="row" style="gap:8px;margin-top:10px;flex-wrap:wrap">'+(i>0?'<button class="btn small" onclick="A.phMain(\''+id+'\','+i+')">⭐ Fă-o principală</button>':'')+'<button class="btn small danger" onclick="A.phDel(\''+id+'\','+i+')">Șterge poza</button></div>':'')+
     '<button class="btn block" style="margin-top:10px" onclick="A.itemView(\''+id+'\')">‹ Înapoi la articol</button>';
     openModal(esc(it.name),h);},
-  phMain:function(id,i){if(!canItems()){deny();return;}var it=item(id);if(!it)return;var P=photosOf(it);if(!P[i])return;var p=P.splice(i,1)[0];P.unshift(p);setPhotos(it,P);save();toast('Poză principală schimbată.');A.phView(id,0);render();},
-  phDel:function(id,i){if(!canItems()){deny();return;}var it=item(id);if(!it)return;confirmBox('Ștergi această poză?',function(){var P=photosOf(it);P.splice(i,1);setPhotos(it,P);save();toast('Poză ștearsă.');render();if(P.length)A.phView(id,Math.min(i,P.length-1));else A.itemView(id);},'Șterge');},
+  itemRename:function(id){var it=item(id);if(!canItemEdit(it)){deny();return;}openModal('Schimbă numele','<label>Numele echipamentului</label><input id="rn-n" maxlength="200" value="'+esc(it.name)+'"><button class="btn primary block" style="margin-top:12px" onclick="A.itemRenameSave(\''+id+'\')">Salvează</button><button class="btn block" style="margin-top:6px" onclick="A.itemView(\''+id+'\')">Renunță</button>');},
+  itemRenameSave:function(id){var it=item(id);if(!canItemEdit(it)){deny();return;}var n=($('rn-n').value||'').trim();if(n.length<2){toast('Scrie numele.',true);return;}if(n===it.name){A.itemView(id);return;}it.name=n.slice(0,200);save();toast('✓ Numele e schimbat.');A.itemView(id);render();},
+  phMain:function(id,i){if(!canItemEdit(item(id))){deny();return;}var it=item(id);if(!it)return;var P=photosOf(it);if(!P[i])return;var p=P.splice(i,1)[0];P.unshift(p);setPhotos(it,P);save();toast('Poză principală schimbată.');A.phView(id,0);render();},
+  phDel:function(id,i){if(!canItemEdit(item(id))){deny();return;}var it=item(id);if(!it)return;confirmBox('Ștergi această poză?',function(){var P=photosOf(it);P.splice(i,1);setPhotos(it,P);save();toast('Poză ștearsă.');render();if(P.length)A.phView(id,Math.min(i,P.length-1));else A.itemView(id);},'Șterge');},
   stateForm:function(id){
     var it=item(id);
     var h='<label>Ce s-a întâmplat?</label><select id="st-a"><option value="def">Raportez defect</option><option value="men">Trimit la mentenanță</option><option value="ok">Readuc în stoc (reparat / revenit)</option></select>'+
