@@ -234,7 +234,7 @@ function accRes(r,okMsg){
 }
 function deny(){toast('Nu ai drept pentru această acțiune.',true);}
 function toast(m,bad){var t=document.createElement('div');t.textContent=m;if(bad)t.className='bad';$('toast').appendChild(t);setTimeout(function(){t.remove();},bad?4200:2400);}
-var VERSION='v0.22.0',SCHEMA=9;
+var VERSION='v0.22.1',SCHEMA=9;
 var ZONES0=[
  {id:'c1',name:'Camera 1',desc:'Ultima din video, după ușă: frigider, rafturi și multe flightcase-uri diferite.',x:10,y:10,w:320,h:170},
  {id:'c2',name:'Camera 2',desc:'A doua din video: sunet, rafturi și un birou.',x:10,y:190,w:320,h:150},
@@ -2127,7 +2127,7 @@ var A3={
   pvCopy:function(id){var pv=pvGet(id);if(!pv)return;var t=pvLink(pv);try{navigator.clipboard.writeText(t).then(function(){toast('✓ Linkul e copiat.');},function(){toast(t);});}catch(e){toast(t);}},
   pvPrint:function(id){var pv=pvGet(id);if(!pv)return;closeModal();var box=$('printarea');if(!box){box=document.createElement('div');box.id='printarea';document.body.appendChild(box);}
     box.innerHTML='<div class="pa-bar"><button class="btn primary" onclick="window.print()">🖨️ Printează / Salvează PDF</button><button class="btn" onclick="A.printClose()">Închide</button></div>'+pvDocHtml(pv);box.hidden=false;document.body.classList.add('printing');},
-  pvExit:function(){PVTOK='';try{history.replaceState(null,'',location.pathname);}catch(e){}render();},
+  pvExit:function(){PVTOK='';var cg=$('cloudgate');if(cg&&cg.innerHTML&&!UI.profile&&!CLOUD.linked())cg.hidden=false;try{history.replaceState(null,'',location.pathname);}catch(e){}render();},
   pvReload:function(){pvPublicLoad();},
   pvPubSign:function(){var pv=PVP.pv;if(!pv||pv.signedAt)return;var nm=(($('pv-nm')||{}).value||'').trim();
     if(nm.length<3){toast('Scrie numele tău (nume și prenume).',true);return;}if(!UI.padDrawn){toast('Semnează în chenar.',true);return;}
@@ -2391,7 +2391,7 @@ var CLOUD=(function(){
   function box(html){
     var d=document.getElementById('cloudgate');
     if(!d){d=document.createElement('div');d.id='cloudgate';document.body.appendChild(d);}
-    d.innerHTML='<div class="cg">'+html+'</div>';d.hidden=false;return d;
+    d.innerHTML='<div class="cg">'+html+'</div>';d.hidden=!!PVTOK;return d;
   }
   function hideBox(){var d=document.getElementById('cloudgate');if(d)d.hidden=true;}
   function showGate(msg){
