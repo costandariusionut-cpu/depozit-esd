@@ -234,7 +234,7 @@ function accRes(r,okMsg){
 }
 function deny(){toast('Nu ai drept pentru această acțiune.',true);}
 function toast(m,bad){var t=document.createElement('div');t.textContent=m;if(bad)t.className='bad';$('toast').appendChild(t);setTimeout(function(){t.remove();},bad?4200:2400);}
-var VERSION='v0.23.0',SCHEMA=9;
+var VERSION='v0.24.0',SCHEMA=9;
 var ZONES0=[
  {id:'c1',name:'Camera 1',desc:'Ultima din video, după ușă: frigider, rafturi și multe flightcase-uri diferite.',x:10,y:10,w:320,h:170},
  {id:'c2',name:'Camera 2',desc:'A doua din video: sunet, rafturi și un birou.',x:10,y:190,w:320,h:150},
@@ -1031,10 +1031,15 @@ function checkList(){
 }
 function notifView(){
   S.seen[P()+UI.me]=Date.now();save();
-  var h=back()+'<h2>Notificări</h2>'+pushCard()+'<div class="card"><b>Ce vreau să primesc</b>';
-  Object.keys(NTYPES).forEach(function(k){if(k==='reminder'&&P()!=='depozit')return;h+='<label class="check" style="margin:0;color:var(--ink);font-size:1rem"><span class="grow">'+NTYPES[k]+'</span><input type="checkbox" class="sw" '+(pref(k)?'checked':'')+' onchange="A.setN(\''+k+'\',this.checked)"></label>';});
-  h+='</div>';var l=myNotifs();
-  h+=l.length?l.map(function(n){return '<div class="card sm">'+esc(n.text)+'<div class="mut">'+new Date(n.at).toLocaleDateString('ro-RO')+'</div></div>';}).join(''):'<div class="card mut">Nicio notificare.</div>';
+  var ks=nKeys(),on=ks.filter(function(k){return pref(k);}).length;
+  var h=back()+'<h2>Notificări</h2>'+pushCard()+'<button class="btn block" style="margin-bottom:10px;display:flex;align-items:center;gap:8px" onclick="A.nSettings()"><span>⚙️</span><span class="grow" style="text-align:left">Setări notificări</span><span class="pill'+(on===ks.length?' ok':'')+'">'+on+' / '+ks.length+' pornite</span></button>';
+  var l=myNotifs(),F=UI.nFilter||'all';
+  var gs=NGROUPS.filter(function(g){return l.some(function(n){return g.k.indexOf(n.type)>=0;});});
+  if(gs.length>1)h+='<div class="seg" style="flex-wrap:wrap"><div class="chip '+(F==='all'?'on':'')+'" onclick="A.nFilter(\'all\')">Toate</div>'+gs.map(function(g){return '<div class="chip '+(F===g.id?'on':'')+'" onclick="A.nFilter(\''+g.id+'\')">'+g.i+' '+g.t+'</div>';}).join('')+'</div>';
+  var G=NGROUPS.filter(function(g){return g.id===F;})[0];if(G)l=l.filter(function(n){return G.k.indexOf(n.type)>=0;});
+  var day='';
+  h+=l.length?l.map(function(n){var d=new Date(n.at),ds=d.toLocaleDateString('ro-RO'),t=new Date().toLocaleDateString('ro-RO');var head='';if(ds!==day){day=ds;head='<div class="mut sm" style="margin:10px 2px 4px">'+(ds===t?'Azi':ds)+'</div>';}
+    return head+'<div class="card sm" style="display:flex;gap:10px;align-items:flex-start"><span>'+nIcon(n.type)+'</span><div class="grow">'+esc(n.text)+'<div class="mut">'+pad(d.getHours())+':'+pad(d.getMinutes())+'</div></div></div>';}).join(''):'<div class="card mut">Nicio notificare.</div>';
   return h;
 }
 
@@ -2154,6 +2159,35 @@ var A3={
 };
 Object.keys(A3).forEach(function(k){A2[k]=A3[k];});
 if(PVTOK)setTimeout(pvPublicLoad,0);
+var NGROUPS=[{id:'me',i:'🙋',t:'Pentru mine',d:'Când ești pus la un eveniment, primești un task sau o mențiune',k:['echipa','task']},
+  {id:'ev',i:'🎤',t:'Evenimente',d:'Evenimente noi și modificate',k:['eveniment']},
+  {id:'rent',i:'🧾',t:'Rent',d:'Închirieri noi, prelungiri, returnări, remindere',k:['rent','prelungire','returnare','reminder']},
+  {id:'eq',i:'📦',t:'Echipament',d:'Defecte, mentenanță și necesar',k:['defect','necesar']},
+  {id:'pv',i:'📝',t:'Procese verbale',d:'Predări de echipament și semnături',k:['pv']},
+  {id:'mod',i:'✏️',t:'Modificări',d:'Orice schimbare făcută de colegi (multe)',k:['modificare']}];
+function nKeys(){return Object.keys(NTYPES).filter(function(k){return !(k==='reminder'&&P()!=='depozit');});}
+function nIcon(t){var g=NGROUPS.filter(function(g){return g.k.indexOf(t)>=0;})[0];return g?g.i:'🔔';}
+function nSettingsHtml(){var ks=nKeys();
+  var h='<div class="mut sm">Alegi ce vrei să primești pe acest cont, pe telefon și în listă.</div><div class="row" style="margin:10px 0;flex-wrap:wrap"><button class="btn small" onclick="A.nPreset(\'all\')">Toate</button><button class="btn small" onclick="A.nPreset(\'imp\')">Doar importante</button><button class="btn small" onclick="A.nPreset(\'me\')">Doar ce mă privește</button></div>';
+  NGROUPS.forEach(function(g){var k2=g.k.filter(function(k){return ks.indexOf(k)>=0;});if(!k2.length)return;var on=k2.filter(function(k){return pref(k);}).length;
+    h+='<div class="card" style="padding:10px 12px"><label class="check" style="margin:0;color:var(--ink);font-size:1rem"><span class="grow"><b>'+g.i+' '+g.t+'</b><div class="mut sm">'+g.d+'</div></span><input type="checkbox" class="sw" '+(on===k2.length?'checked':'')+' onchange="A.nGroup(\''+g.id+'\',this.checked)"></label>';
+    if(k2.length>1){var op=UI.nOpen===g.id;h+='<button class="btn small" style="margin-top:6px" onclick="A.nOpen(\''+g.id+'\')">'+(op?'▾ Ascunde detaliile':'▸ Alege în detaliu ('+on+' / '+k2.length+')')+'</button>';
+      if(op)h+=k2.map(function(k){return '<label class="check" style="margin:6px 0 0 8px;color:var(--ink);font-size:.95rem"><span class="grow">'+NTYPES[k]+'</span><input type="checkbox" class="sw" '+(pref(k)?'checked':'')+' onchange="A.nOne(\''+k+'\',this.checked)"></label>';}).join('');}
+    h+='</div>';});
+  return h;}
+var A4={
+  nSettings:function(){openModal('Setări notificări',nSettingsHtml());},
+  nRefresh:function(){var b=$('mbody');if(b&&!$('modal').hidden)b.innerHTML=nSettingsHtml();},
+  nOne:function(k,on){A.setN(k,on);A4.nRefresh();},
+  nGroup:function(id,on){var g=NGROUPS.filter(function(x){return x.id===id;})[0];if(!g)return;g.k.forEach(function(k){if(NTYPES[k])A.setN(k,on);});A4.nRefresh();},
+  nOpen:function(id){UI.nOpen=UI.nOpen===id?'':id;A4.nRefresh();},
+  nPreset:function(w){var imp={echipa:1,task:1,pv:1,defect:1,rent:1,returnare:1,reminder:1,necesar:1},me={echipa:1,task:1,pv:1};
+    Object.keys(NTYPES).forEach(function(k){A.setN(k,w==='all'?true:w==='imp'?!!imp[k]:!!me[k]);});A4.nRefresh();toast(w==='all'?'Toate notificările pornite.':w==='imp'?'Doar cele importante (fără „Modificări” și evenimente modificate).':'Doar ce te privește direct.');},
+  nFilter:function(f){UI.nFilter=f;render();},
+  close:null
+};
+delete A4.close;
+Object.keys(A4).forEach(function(k){A2[k]=A4[k];});
 Object.keys(A2).forEach(function(k){A[k]=A2[k];});
 
 window.A=A;
