@@ -236,7 +236,7 @@ function accRes(r,okMsg){
 }
 function deny(){toast('Nu ai drept pentru această acțiune.',true);}
 function toast(m,bad){var t=document.createElement('div');t.textContent=m;if(bad)t.className='bad';$('toast').appendChild(t);setTimeout(function(){t.remove();},bad?4200:2400);}
-var VERSION='v0.25.1',SCHEMA=9;
+var VERSION='v0.26.0',SCHEMA=9;
 var ZONES0=[
  {id:'c1',name:'Camera 1',desc:'Ultima din video, după ușă: frigider, rafturi și multe flightcase-uri diferite.',x:10,y:10,w:320,h:170},
  {id:'c2',name:'Camera 2',desc:'A doua din video: sunet, rafturi și un birou.',x:10,y:190,w:320,h:150},
@@ -1610,7 +1610,10 @@ function notifyP(type,pids,text){var to=[];(pids||[]).forEach(function(p){if(p&&
 function tk(id){return (S.tasks||[]).filter(function(t){return t.id===id;})[0];}
 function mt(id){return (S.meetings||[]).filter(function(m){return m.id===id;})[0];}
 function tnotesOf(id){return (S.tnotes||[]).filter(function(n){return n.task===id;}).sort(function(a,b){return a.at-b.at;});}
-function canTask(t){return isMgr()||t.owner===UI.me||t.createdBy===UI.me;}
+function tChain(t){return Array.isArray(t.chain)?t.chain:[];}
+function canTask(t){return isMgr()||t.owner===UI.me||t.createdBy===UI.me||tChain(t).indexOf(UI.me)>=0;}
+function tFollowers(t){var w=[t.createdBy].concat(tChain(t));if(t.meeting){var m=mt(t.meeting);if(m&&m.createdBy)w.push(m.createdBy);}return w;}
+function tPath(t){var L=[t.createdBy].concat(tChain(t),[t.owner]),o=[];L.forEach(function(x){if(x&&o[o.length-1]!==x)o.push(x);});return o.map(function(x){return esc(pname(x));}).join(' → ');}
 function myMentions(){return (S.tnotes||[]).filter(function(n){return (n.ment||[]).indexOf(UI.me)>=0&&!(n.done&&n.done[UI.me])&&tk(n.task);}).sort(function(a,b){return b.at-a.at;});}
 function myOpenTasks(){return (S.tasks||[]).filter(function(t){return t.owner===UI.me&&t.status==='deschis';});}
 function taskBanner(){
@@ -1622,7 +1625,7 @@ function tStat(t){var s=TSTAT[t.status]||TSTAT.deschis;return '<span class="pill
 function taskCard(t){
   var nn=tnotesOf(t.id).filter(function(n){return n.kind!=='stare';}).length,m=t.meeting&&mt(t.meeting);
   var late=t.status==='deschis'&&t.due&&t.due<today();
-  return '<div class="card" style="cursor:pointer" onclick="A.tkView(\''+t.id+'\')"><div class="row top"><div class="grow"><b>'+esc(t.title)+'</b><div class="mut sm">'+esc(pname(t.owner))+(t.due?' · termen <span style="'+(late?'color:var(--bad);font-weight:700':'')+'">'+fmt(t.due)+'</span>':'')+(m?' · ședința '+fmtS(m.date):'')+(nn?' · '+nn+' note':'')+'</div></div>'+tStat(t)+'</div></div>';
+  return '<div class="card" style="cursor:pointer" onclick="A.tkView(\''+t.id+'\')"><div class="row top"><div class="grow"><b>'+esc(t.title)+'</b><div class="mut sm">'+(tChain(t).length?'↪ ':'')+esc(pname(t.owner))+(t.createdBy&&t.createdBy!==t.owner?' · de la '+esc(pname(t.createdBy)):'')+(t.due?' · termen <span style="'+(late?'color:var(--bad);font-weight:700':'')+'">'+fmt(t.due)+'</span>':'')+(m?' · ședința '+fmtS(m.date):'')+(nn?' · '+nn+' note':'')+'</div></div>'+tStat(t)+'</div></div>';
 }
 function tasksView(){
   var s=UI.tsub||'mine',h=back()+'<h2>Taskuri și ședințe</h2>';
@@ -1644,6 +1647,8 @@ function tasksView(){
     var done=mine.filter(function(t){return t.status==='finalizat';});
     h+='<h3>În lucru</h3>'+(open.length?open.map(taskCard).join(''):'<div class="mut sm" style="margin-bottom:8px">Nimic în lucru.</div>');
     if(post.length)h+='<h3>Amânate</h3>'+post.map(taskCard).join('');
+    var given=(S.tasks||[]).filter(function(t){return t.owner!==UI.me&&t.status!=='finalizat'&&(t.createdBy===UI.me||tChain(t).indexOf(UI.me)>=0);});
+    if(given.length)h+='<h3>Date sau delegate de mine</h3><div class="mut sm" style="margin-bottom:6px">Primești notificare când sunt finalizate.</div>'+given.map(taskCard).join('');
     if(done.length)h+='<details><summary class="mut" style="cursor:pointer;margin:10px 0">Finalizate ('+done.length+')</summary>'+done.map(taskCard).join('')+'</details>';
     return h;
   }
@@ -1662,11 +1667,13 @@ function taskDetail(id){
   var h='<div class="row top"><div class="grow"><b style="font-size:1.1875rem">'+esc(t.title)+'</b></div>'+tStat(t)+'</div>';
   if(t.desc)h+='<div style="margin-top:6px">'+esc(t.desc).replace(/\n/g,'<br>')+'</div>';
   h+='<div class="mut sm" style="margin-top:6px">Responsabil: <b>'+esc(pname(t.owner))+'</b> · creat de '+esc(pname(t.createdBy))+' pe '+fmt(t.created)+(t.due?' · termen '+fmt(t.due):'')+(m?' · asumat la ședința din '+fmt(m.date):'')+'</div>';
+  if(tChain(t).length)h+='<div class="mut sm" style="margin-top:4px">↪ Delegat: '+tPath(t)+'</div>';
   if(canTask(t)){
     h+='<div class="row" style="margin-top:10px;flex-wrap:wrap;gap:6px">'+
     (t.status!=='finalizat'?'<button class="btn small" onclick="A.tkStatus(\''+id+'\',\'finalizat\')">✓ Finalizat</button>':'')+
     (t.status!=='amanat'?'<button class="btn small" onclick="A.tkPostpone(\''+id+'\')">⏸ Amână</button>':'')+
     (t.status!=='deschis'?'<button class="btn small" onclick="A.tkStatus(\''+id+'\',\'deschis\')">↺ Redeschide</button>':'')+
+    (t.status!=='finalizat'?'<button class="btn small" onclick="A.tkDeleg(\''+id+'\')">↪ Deleagă</button>':'')+
     '<button class="btn small" onclick="A.tkForm(\''+id+'\')">Editează</button><button class="btn small danger" onclick="A.tkDel(\''+id+'\')">Șterge</button></div>';
   }
   var N=tnotesOf(id);
@@ -1889,7 +1896,7 @@ var A2={
     var due=$('tf-due').value;if(due&&!validDate(due)){toast('Termen invalid.',true);return;}
     var owner=$('tf-o').value,mid=$('tf-m').value;if(!person(owner)){toast('Alege cine își asumă taskul.',true);return;}
     if(id){var t=tk(id);if(!t){closeModal();return;}if(!canTask(t)){deny();return;}var prev=t.owner;t.title=title;t.desc=$('tf-d').value.trim();t.owner=owner;t.due=due;t.meeting=mid;
-      if(owner!==prev)notifyP('task',[owner],pname(UI.me)+' ți-a dat taskul „'+title+'”');}
+      if(owner!==prev){if(UI.me!==t.createdBy&&tChain(t).indexOf(UI.me)<0)t.chain=tChain(t).concat([UI.me]);notifyP('task',[owner],pname(UI.me)+' ți-a dat taskul „'+title+'”');}}
     else{var t2={id:uid('t_'),title:title,desc:$('tf-d').value.trim(),owner:owner,due:due,meeting:mid,status:'deschis',until:'',created:today(),createdBy:UI.me};if(!S.tasks)S.tasks=[];S.tasks.push(t2);
       notifyP('task',[owner],pname(UI.me)+' ți-a dat taskul „'+title+'”'+(due?', termen '+fmt(due):''));}
     save();closeModal();toast('Task salvat.');render();
@@ -1899,10 +1906,21 @@ var A2={
     var t=tk(id);if(!t||!canTask(t)){deny();return;}var old=t.status;t.status=st;t.until=st==='amanat'?(until||''):'';if(st==='finalizat')t.doneAt=today();
     var txt=st==='finalizat'?'A marcat taskul ca finalizat.':st==='amanat'?'A amânat taskul'+(until?' până la '+fmt(until):'')+'.'+(why?' Motiv: '+why:''):'A redeschis taskul.';
     if(!S.tnotes)S.tnotes=[];S.tnotes.push({id:uid('tn_'),task:id,at:Date.now(),by:UI.me,kind:'stare',text:txt,ment:[],done:{}});
-    var who=[t.owner,t.createdBy];if(t.meeting){var m=mt(t.meeting);if(m&&m.createdBy)who.push(m.createdBy);}
-    if(old!==st)notifyP('task',who,pname(UI.me)+': „'+t.title+'” – '+(TSTAT[st]||TSTAT.deschis)[0].toLowerCase());
+    var who=[t.owner].concat(tFollowers(t));
+    if(old!==st)notifyP('task',who,(st==='finalizat'?'✅ ':'')+pname(UI.me)+': „'+t.title+'” – '+(TSTAT[st]||TSTAT.deschis)[0].toLowerCase());
     save();toast('Stare: '+(TSTAT[st]||TSTAT.deschis)[0]+'.');taskDetail(id);render();
   },
+  tkDeleg:function(id){var t=tk(id);if(!t||!canTask(t)){deny();return;}
+    var ppl=S.persons.filter(function(p){return p.id!==t.owner;});
+    openModal('Deleagă taskul','<div><b>'+esc(t.title)+'</b></div><div class="mut sm">Acum la: '+esc(pname(t.owner))+'</div><label>Către cine</label><select id="td-p">'+ppl.map(function(p){return '<option value="'+p.id+'">'+esc(p.name)+(p.dept&&p.dept!=='—'?' · '+esc(p.dept):'')+'</option>';}).join('')+'</select><label>Mesaj (opțional)</label><textarea id="td-m" maxlength="500" placeholder="ex. Te rog vezi tu de asta până vineri"></textarea><div class="mut sm" style="margin-top:6px">Rămâi să urmărești taskul și primești notificare când e finalizat.</div><button class="btn primary block" style="margin-top:12px" onclick="A.tkDelegSave(\''+id+'\')">↪ Deleagă</button>');},
+  tkDelegSave:function(id){var t=tk(id);if(!t||!canTask(t)){deny();return;}var to=($('td-p')||{}).value,msg=(($('td-m')||{}).value||'').trim();
+    if(!person(to)||to===t.owner){toast('Alege colegul.',true);return;}
+    var from=t.owner,ch=tChain(t).slice();[UI.me,from].forEach(function(x){if(x&&x!==t.createdBy&&x!==to&&ch.indexOf(x)<0)ch.push(x);});
+    t.chain=ch.filter(function(x){return x!==to;});t.owner=to;if(t.status==='amanat'){t.status='deschis';t.until='';}
+    if(!S.tnotes)S.tnotes=[];S.tnotes.push({id:uid('tn_'),task:id,at:Date.now(),by:UI.me,kind:'stare',text:'A delegat taskul către '+pname(to)+'.'+(msg?' '+msg:''),ment:[],done:{}});
+    notifyP('task',[to],'↪ '+pname(UI.me)+' ți-a delegat taskul „'+t.title+'”'+(t.due?', termen '+fmt(t.due):'')+(msg?': '+msg:''));
+    notifyP('task',tFollowers(t).concat([from]).filter(function(x){return x!==to;}),'↪ '+pname(UI.me)+' a delegat taskul „'+t.title+'” către '+pname(to)+'.');
+    save();toast('✓ Taskul e la '+pname(to)+'.');taskDetail(id);render();},
   tkPostpone:function(id){var t=tk(id);if(!t||!canTask(t)){deny();return;}
     openModal('Amână taskul','<div><b>'+esc(t.title)+'</b></div><label>Până la (opțional)</label><input type="date" id="tp-d" value="'+esc(t.due&&t.due>today()?t.due:addDays(today(),14))+'"><label>De ce (opțional)</label><input id="tp-w" maxlength="300"><button class="btn primary block" style="margin-top:12px" onclick="A.tkPostSave(\''+id+'\')">Amână</button>');},
   tkPostSave:function(id){var d=$('tp-d').value;if(d&&!validDate(d)){toast('Dată invalidă.',true);return;}A.tkStatus(id,'amanat',d,$('tp-w').value.trim());},
@@ -2247,7 +2265,7 @@ var CLOUD=(function(){
       (d.mode==='unit'?d.units.every(function(u){return u&&str(u.code)&&(u.state==='Prezent'||u.state==='Defect'||u.state==='Mentenanță');})
         :(num(d.total)&&d.total>=0&&(d.defect==null||(num(d.defect)&&d.defect>=0))&&(d.maint==null||(num(d.maint)&&d.maint>=0))));
     if(c==='events')return str(d.name)&&!!d.name&&DRE.test(d.from)&&DRE.test(d.to)&&d.to>=d.from&&linesOk(d.lines)&&Array.isArray(d.team)&&d.team.every(str)&&str(d.resp)&&(d.logi==null||(typeof d.logi==='object'&&!Array.isArray(d.logi)&&Object.keys(d.logi).every(function(k){var x=d.logi[k];return x&&typeof x==='object'&&(!x.d||DRE.test(x.d))&&(!x.t||/^\d{2}:\d{2}$/.test(x.t));})))&&(d.vans==null||(Array.isArray(d.vans)&&d.vans.every(str)));
-    if(c==='tasks')return str(d.title)&&!!d.title&&str(d.owner)&&(d.status==='deschis'||d.status==='finalizat'||d.status==='amanat')&&(!d.due||DRE.test(d.due))&&(!d.until||DRE.test(d.until));
+    if(c==='tasks')return str(d.title)&&!!d.title&&str(d.owner)&&(d.chain==null||(Array.isArray(d.chain)&&d.chain.every(str)))&&(d.status==='deschis'||d.status==='finalizat'||d.status==='amanat')&&(!d.due||DRE.test(d.due))&&(!d.until||DRE.test(d.until));
     if(c==='tnotes')return str(d.task)&&str(d.text)&&str(d.by)&&num(d.at)&&Array.isArray(d.ment)&&d.ment.every(str)&&(d.done==null||typeof d.done==='object');
     if(c==='meetings')return DRE.test(d.date)&&Array.isArray(d.people)&&d.people.every(str);
     if(c==='needs')return str(d.title)&&!!d.title&&!!NKIND[d.kind]&&!!NSTAT[d.status]&&num(d.at)&&(d.qty==null||num(d.qty));
