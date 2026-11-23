@@ -1,5 +1,5 @@
-/* Service worker Depozit ESD v0.26.0: aplicația merge și fără internet */
-var CACHE='esd-app-v0.26.0',LIB='esd-lib-v1';
+/* Service worker Depozit ESD v0.27.0: aplicația merge și fără internet */
+var CACHE='esd-app-v0.27.0',LIB='esd-lib-v1';
 var FILES=['./','index.html','manifest.webmanifest','icons/icon-192.png','icons/icon-512.png','icons/maskable-512.png','icons/apple-touch-icon.png','icons/favicon-32.png'];
 self.addEventListener('install',function(e){e.waitUntil(caches.open(CACHE).then(function(c){return c.addAll(FILES);}).then(function(){return self.skipWaiting();}));});
 self.addEventListener('activate',function(e){e.waitUntil(caches.keys().then(function(k){return Promise.all(k.filter(function(x){return x!==CACHE&&x!==LIB;}).map(function(x){return caches.delete(x);}));}).then(function(){return self.clients.claim();}));});
